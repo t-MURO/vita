@@ -33,6 +33,10 @@ test("server-renders the resume studio", async () => {
   assert.match(html, /<title>Vita – Lebenslauf Studio<\/title>/i);
   assert.match(html, /Inhalt bearbeiten/);
   assert.match(html, /Als PDF exportieren/);
+  assert.match(html, /Bewerbungsfoto/);
+  assert.match(html, /type="file"/);
+  assert.match(html, /Design/);
+  assert.match(html, /Spalten tauschen/);
   assert.match(html, /Software Engineer mit Erfahrung/);
   assert.match(html, /Lebenslauf-Vorschau/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);

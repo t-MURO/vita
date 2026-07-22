@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type Experience = {
   id: number;
@@ -26,6 +26,7 @@ type SkillGroup = {
 };
 
 type ResumeData = {
+  photo: string;
   name: string;
   role: string;
   email: string;
@@ -41,11 +42,16 @@ type ResumeData = {
   interests: string;
 };
 
-type ThemeName = "sage" | "ink" | "clay" | "plum";
+type ThemeName = "sage" | "ink" | "clay" | "plum" | "ocean" | "sand";
 type FontName = "sans" | "serif";
-type EditorSection = "personal" | "intro" | "experience" | "education" | "skills";
+type DensityName = "compact" | "balanced" | "airy";
+type ColumnLayout = "experience-left" | "experience-right";
+type PhotoShape = "circle" | "rounded" | "square";
+type HeadingStyle = "caps" | "editorial";
+type EditorSection = "personal" | "intro" | "experience" | "education" | "skills" | "design";
 
 const initialData: ResumeData = {
+  photo: "",
   name: "Alex Morgan",
   role: "Software Engineer",
   email: "alex.morgan@example.com",
@@ -114,6 +120,8 @@ const themes: Array<{ name: ThemeName; label: string; color: string; soft: strin
   { name: "ink", label: "Tinte", color: "#34475d", soft: "#edf1f5", ink: "#182330" },
   { name: "clay", label: "Terrakotta", color: "#aa5c42", soft: "#f7ece7", ink: "#44241a" },
   { name: "plum", label: "Pflaume", color: "#705276", soft: "#f2ebf3", ink: "#352638" },
+  { name: "ocean", label: "Ozean", color: "#25657a", soft: "#e7f1f4", ink: "#173a45" },
+  { name: "sand", label: "Sand", color: "#8a7042", soft: "#f4f0e6", ink: "#40341f" },
 ];
 
 const editorSections: Array<{ id: EditorSection; label: string; number: string }> = [
@@ -122,6 +130,7 @@ const editorSections: Array<{ id: EditorSection; label: string; number: string }
   { id: "experience", label: "Erfahrung", number: "03" },
   { id: "education", label: "Ausbildung", number: "04" },
   { id: "skills", label: "Kenntnisse", number: "05" },
+  { id: "design", label: "Design", number: "06" },
 ];
 
 const inputClass = "form-input";
@@ -134,19 +143,36 @@ export function ResumeBuilder() {
   const [data, setData] = useState<ResumeData>(initialData);
   const [theme, setTheme] = useState<ThemeName>("sage");
   const [font, setFont] = useState<FontName>("sans");
+  const [density, setDensity] = useState<DensityName>("balanced");
+  const [columnLayout, setColumnLayout] = useState<ColumnLayout>("experience-left");
+  const [photoShape, setPhotoShape] = useState<PhotoShape>("rounded");
+  const [headingStyle, setHeadingStyle] = useState<HeadingStyle>("caps");
   const [activeSection, setActiveSection] = useState<EditorSection>("personal");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [storageReady, setStorageReady] = useState(false);
   const [saveLabel, setSaveLabel] = useState("Automatisch gespeichert");
+  const [photoError, setPhotoError] = useState("");
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem("vita-resume");
       if (saved) {
-        const parsed = JSON.parse(saved) as { data?: ResumeData; theme?: ThemeName; font?: FontName };
-        if (parsed.data) setData(parsed.data);
+        const parsed = JSON.parse(saved) as {
+          data?: ResumeData;
+          theme?: ThemeName;
+          font?: FontName;
+          density?: DensityName;
+          columnLayout?: ColumnLayout;
+          photoShape?: PhotoShape;
+          headingStyle?: HeadingStyle;
+        };
+        if (parsed.data) setData({ ...initialData, ...parsed.data });
         if (parsed.theme) setTheme(parsed.theme);
         if (parsed.font) setFont(parsed.font);
+        if (parsed.density) setDensity(parsed.density);
+        if (parsed.columnLayout) setColumnLayout(parsed.columnLayout);
+        if (parsed.photoShape) setPhotoShape(parsed.photoShape);
+        if (parsed.headingStyle) setHeadingStyle(parsed.headingStyle);
       }
     } catch {
       // The editor still works when browser storage is unavailable.
@@ -160,14 +186,17 @@ export function ResumeBuilder() {
     setSaveLabel("Speichert …");
     const timer = window.setTimeout(() => {
       try {
-        window.localStorage.setItem("vita-resume", JSON.stringify({ data, theme, font }));
+        window.localStorage.setItem(
+          "vita-resume",
+          JSON.stringify({ data, theme, font, density, columnLayout, photoShape, headingStyle }),
+        );
         setSaveLabel("Automatisch gespeichert");
       } catch {
         setSaveLabel("Nur für diese Sitzung");
       }
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [data, theme, font, storageReady]);
+  }, [data, theme, font, density, columnLayout, photoShape, headingStyle, storageReady]);
 
   const selectedTheme = themes.find((item) => item.name === theme) ?? themes[0];
 
@@ -201,11 +230,61 @@ export function ResumeBuilder() {
     }));
   };
 
+  const handlePhotoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Bitte wähle eine Bilddatei aus.");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setPhotoError("Das Bild darf höchstens 8 MB groß sein.");
+      return;
+    }
+
+    setPhotoError("");
+    const reader = new FileReader();
+    reader.onerror = () => setPhotoError("Das Bild konnte nicht gelesen werden.");
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      const image = new Image();
+      image.onerror = () => setPhotoError("Dieses Bildformat konnte nicht verarbeitet werden.");
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const outputSize = 480;
+        const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
+        const sourceX = (image.naturalWidth - sourceSize) / 2;
+        const sourceY = (image.naturalHeight - sourceSize) / 2;
+        canvas.width = outputSize;
+        canvas.height = outputSize;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          setPhotoError("Das Bild konnte nicht verarbeitet werden.");
+          return;
+        }
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, outputSize, outputSize);
+        context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, outputSize, outputSize);
+        setField("photo", canvas.toDataURL("image/jpeg", 0.86));
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const resetResume = () => {
     if (!window.confirm("Möchtest du alle Änderungen zurücksetzen?")) return;
     setData(initialData);
     setTheme("sage");
     setFont("sans");
+    setDensity("balanced");
+    setColumnLayout("experience-left");
+    setPhotoShape("rounded");
+    setHeadingStyle("caps");
+    setPhotoError("");
   };
 
   return (
@@ -268,6 +347,35 @@ export function ResumeBuilder() {
                   <p>01 / Persönlich</p>
                   <h2 id="personal-heading">Die wichtigsten Details</h2>
                   <span>Nur Informationen eintragen, die für deine Bewerbung relevant sind.</span>
+                </div>
+                <div className="photo-upload-card">
+                  <div className={`photo-upload-preview photo-shape-${photoShape}`}>
+                    {data.photo ? (
+                      <img src={data.photo} alt="Vorschau des Bewerbungsfotos" />
+                    ) : (
+                      <span aria-hidden="true">{data.name.trim().charAt(0) || "V"}</span>
+                    )}
+                  </div>
+                  <div className="photo-upload-copy">
+                    <strong>Bewerbungsfoto <em>optional</em></strong>
+                    <p>Das Bild wird quadratisch zugeschnitten und bleibt in diesem Browser.</p>
+                    <div className="photo-upload-actions">
+                      <label className="upload-button" htmlFor="profile-photo-upload">
+                        {data.photo ? "Bild ersetzen" : "Bild auswählen"}
+                      </label>
+                      <input
+                        id="profile-photo-upload"
+                        className="photo-file-input"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePhotoUpload}
+                      />
+                      {data.photo && (
+                        <button type="button" onClick={() => setField("photo", "")}>Entfernen</button>
+                      )}
+                    </div>
+                    {photoError && <p className="photo-error" role="alert">{photoError}</p>}
+                  </div>
                 </div>
                 <div className="form-grid two-columns">
                   <label className="field full-width">
@@ -433,6 +541,99 @@ export function ResumeBuilder() {
                 </div>
               </section>
             )}
+
+            {activeSection === "design" && (
+              <section className="form-section" aria-labelledby="design-heading">
+                <div className="section-heading">
+                  <p>06 / Design</p>
+                  <h2 id="design-heading">Dein persönlicher Stil</h2>
+                  <span>Alle Einstellungen werden sofort in der Vorschau sichtbar.</span>
+                </div>
+
+                <div className="design-setting">
+                  <div className="design-setting-heading">
+                    <strong>Farbschema</strong>
+                    <span>{selectedTheme.label}</span>
+                  </div>
+                  <div className="design-color-grid">
+                    {themes.map((item) => (
+                      <button
+                        key={item.name}
+                        type="button"
+                        className={theme === item.name ? "active" : ""}
+                        onClick={() => setTheme(item.name)}
+                        aria-pressed={theme === item.name}
+                      >
+                        <span style={{ "--swatch": item.color } as React.CSSProperties} />
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="design-setting">
+                  <div className="design-setting-heading">
+                    <strong>Schriftbild</strong>
+                    <span>{font === "sans" ? "Modern" : "Klassisch"}</span>
+                  </div>
+                  <div className="design-choice-grid two-options">
+                    <button type="button" className={font === "sans" ? "active" : ""} onClick={() => setFont("sans")} aria-pressed={font === "sans"}>
+                      <b className="font-sample-sans">Aa</b><span><strong>Modern</strong><small>Klar und reduziert</small></span>
+                    </button>
+                    <button type="button" className={font === "serif" ? "active" : ""} onClick={() => setFont("serif")} aria-pressed={font === "serif"}>
+                      <b className="font-sample-serif">Aa</b><span><strong>Klassisch</strong><small>Ruhig und editorial</small></span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="design-setting">
+                  <div className="design-setting-heading">
+                    <strong>Spaltenaufteilung</strong>
+                    <span>{columnLayout === "experience-left" ? "Erfahrung links" : "Erfahrung rechts"}</span>
+                  </div>
+                  <div className="layout-choice-grid">
+                    <button type="button" className={columnLayout === "experience-left" ? "active" : ""} onClick={() => setColumnLayout("experience-left")} aria-pressed={columnLayout === "experience-left"}>
+                      <span className="layout-miniature layout-left"><i /><i /></span>
+                      <span><strong>Erfahrung links</strong><small>Ausbildung & Kenntnisse rechts</small></span>
+                    </button>
+                    <button type="button" className={columnLayout === "experience-right" ? "active" : ""} onClick={() => setColumnLayout("experience-right")} aria-pressed={columnLayout === "experience-right"}>
+                      <span className="layout-miniature layout-right"><i /><i /></span>
+                      <span><strong>Erfahrung rechts</strong><small>Ausbildung & Kenntnisse links</small></span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="design-setting">
+                  <div className="design-setting-heading">
+                    <strong>Abstände</strong>
+                    <span>{density === "compact" ? "Kompakt" : density === "airy" ? "Luftig" : "Ausgewogen"}</span>
+                  </div>
+                  <div className="segmented-design-control three-options">
+                    <button type="button" className={density === "compact" ? "active" : ""} onClick={() => setDensity("compact")} aria-pressed={density === "compact"}>Kompakt</button>
+                    <button type="button" className={density === "balanced" ? "active" : ""} onClick={() => setDensity("balanced")} aria-pressed={density === "balanced"}>Ausgewogen</button>
+                    <button type="button" className={density === "airy" ? "active" : ""} onClick={() => setDensity("airy")} aria-pressed={density === "airy"}>Luftig</button>
+                  </div>
+                </div>
+
+                <div className="design-setting split-settings">
+                  <div>
+                    <div className="design-setting-heading"><strong>Fotoform</strong></div>
+                    <div className="shape-options" aria-label="Fotoform">
+                      {(["circle", "rounded", "square"] as PhotoShape[]).map((shape) => (
+                        <button key={shape} type="button" className={`${shape} ${photoShape === shape ? "active" : ""}`} onClick={() => setPhotoShape(shape)} aria-label={shape === "circle" ? "Rund" : shape === "rounded" ? "Abgerundet" : "Eckig"} aria-pressed={photoShape === shape}><span /></button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="design-setting-heading"><strong>Überschriften</strong></div>
+                    <div className="segmented-design-control">
+                      <button type="button" className={headingStyle === "caps" ? "active" : ""} onClick={() => setHeadingStyle("caps")} aria-pressed={headingStyle === "caps"}>Klar</button>
+                      <button type="button" className={headingStyle === "editorial" ? "active" : ""} onClick={() => setHeadingStyle("editorial")} aria-pressed={headingStyle === "editorial"}>Editorial</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         </aside>
 
@@ -462,16 +663,30 @@ export function ResumeBuilder() {
                 <button className={font === "serif" ? "active" : ""} type="button" onClick={() => setFont("serif")} aria-pressed={font === "serif"}>Klassisch</button>
               </div>
             </div>
+            <button
+              className="swap-layout-button"
+              type="button"
+              onClick={() => setColumnLayout((current) => current === "experience-left" ? "experience-right" : "experience-left")}
+              title="Berufserfahrung und Seitenleiste tauschen"
+            >
+              <span aria-hidden="true">⇄</span> Spalten tauschen
+            </button>
           </div>
 
           <div className="paper-stage">
             <article
-              className={`resume-paper resume-font-${font}`}
+              className={`resume-paper resume-font-${font} resume-density-${density} resume-headings-${headingStyle} resume-photo-${photoShape}`}
               style={{ "--resume-accent": selectedTheme.color, "--resume-soft": selectedTheme.soft, "--resume-ink": selectedTheme.ink } as React.CSSProperties}
             >
               <header className="resume-header">
                 <div className="resume-title-block">
-                  <span className="resume-monogram" aria-hidden="true">{data.name.trim().charAt(0) || "V"}</span>
+                  <div className="resume-portrait">
+                    {data.photo ? (
+                      <img src={data.photo} alt={`${data.name || "Person"} – Bewerbungsfoto`} />
+                    ) : (
+                      <span aria-hidden="true">{data.name.trim().charAt(0) || "V"}</span>
+                    )}
+                  </div>
                   <div>
                     <h2>{data.name || "Dein Name"}</h2>
                     <p>{data.role || "Berufsbezeichnung"}</p>
@@ -491,7 +706,7 @@ export function ResumeBuilder() {
                 </section>
               )}
 
-              <div className="resume-columns">
+              <div className={`resume-columns layout-${columnLayout}`}>
                 <div className="resume-main-column">
                   {data.experience.length > 0 && (
                     <section className="resume-section">
