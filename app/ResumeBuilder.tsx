@@ -88,50 +88,50 @@ type ExperienceTypeConfig = {
 
 const initialData: ResumeData = {
   photo: "",
-  name: "Alex Morgan",
-  role: "Software Engineer",
-  email: "alex.morgan@example.com",
-  phone: "+49 176 12345678",
-  location: "Berlin, Deutschland",
-  website: "alexmorgan.dev",
+  name: "Mara Winterfeld",
+  role: "Kulturmanagerin",
+  email: "mara.winterfeld@example.com",
+  phone: "+49 151 00000000",
+  location: "Freiburg im Breisgau, Deutschland",
+  website: "mara-winterfeld.example",
   birthDate: "",
   intro:
-    "Software Engineer mit Erfahrung in der Entwicklung moderner Webanwendungen. Ich verbinde saubere Softwarearchitektur mit einem guten Gespür für Nutzerbedürfnisse und arbeite gern in interdisziplinären, agilen Teams.",
+    "Kulturmanagerin mit Schwerpunkt auf partizipativen Ausstellungsformaten und regionaler Vermittlungsarbeit. Ich entwickle Programme, die unterschiedliche Perspektiven zusammenbringen, und begleite Projekte von der ersten Idee bis zur Veranstaltung vor Ort.",
   experience: [
     {
       id: 1,
       type: "employment",
-      company: "Digital Health GmbH",
-      location: "Berlin",
+      company: "Museum am Fluss",
+      location: "Freiburg",
       positions: [
         {
           id: 101,
-          period: "04/2024 – heute",
-          role: "Anwendungsentwickler",
+          period: "09/2022 – heute",
+          role: "Programmleitung Bildung & Vermittlung",
           bullets:
-            "Entwicklung und Wartung einer Anwendung im medizinischen Umfeld\nZusammenarbeit im agilen Produktteam\nVerbesserung von Qualität und Wartbarkeit bestehender Komponenten",
+            "Jährliches Veranstaltungsprogramm für verschiedene Altersgruppen konzipiert\nKooperationen mit Schulen, Vereinen und lokalen Initiativen aufgebaut\nBudgets, Zeitpläne und externe Projektteams koordiniert",
         },
       ],
     },
     {
       id: 2,
       type: "employment",
-      company: "Consulting SE",
-      location: "Berlin",
+      company: "Kulturforum Nordlicht",
+      location: "Kiel",
       positions: [
         {
           id: 201,
-          period: "01/2021 – 03/2024",
-          role: "Software Engineer",
+          period: "03/2019 – 08/2022",
+          role: "Projektkoordinatorin",
           bullets:
-            "Entwicklung wiederverwendbarer Komponenten nach Domain-Driven-Design-Prinzipien\nModernisierung bestehender Softwarearchitektur durch gezieltes Refactoring\nTechnische Beratung und direkter Austausch mit Kundenteams",
+            "Lesungen, Werkstätten und ein jährliches Stadtteilfestival organisiert\nFörderanträge vorbereitet und Projektergebnisse dokumentiert\nKommunikation mit Kunstschaffenden, Spielstätten und Presse betreut",
         },
         {
           id: 202,
-          period: "06/2018 – 12/2020",
-          role: "Software Developer",
+          period: "10/2017 – 02/2019",
+          role: "Veranstaltungsassistenz",
           bullets:
-            "Webanwendungen mit Angular und React umgesetzt\nREST-Schnittstellen und Microservices mit Spring und Node.js entwickelt",
+            "Abläufe für Gastspiele und Workshops vorbereitet\nTeilnehmendenmanagement und Abendkasse verantwortet",
         },
       ],
     },
@@ -139,26 +139,26 @@ const initialData: ResumeData = {
   education: [
     {
       id: 1,
-      period: "2016 – 2022",
-      degree: "Medieninformatik (B.Sc.)",
-      institution: "Berliner Hochschule für Technik",
-      detail: "Abschlussnote 1,8",
+      period: "2015 – 2017",
+      degree: "Kulturvermittlung (M.A.)",
+      institution: "Universität Hildesheim",
+      detail: "Schwerpunkt kulturelle Teilhabe",
     },
     {
       id: 2,
-      period: "2011 – 2014",
-      degree: "Allgemeine Hochschulreife",
-      institution: "OSZ Kommunikation, Information und Medientechnik",
-      detail: "Schwerpunkt Medientechnik",
+      period: "2011 – 2015",
+      degree: "Kunstgeschichte und Soziologie (B.A.)",
+      institution: "Universität Leipzig",
+      detail: "Auslandssemester in Utrecht",
     },
   ],
   skills: [
-    { id: 1, label: "Frontend", skills: "Vue, Angular, React, TypeScript" },
-    { id: 2, label: "Backend", skills: "Node.js, Java, Spring, REST APIs" },
-    { id: 3, label: "Arbeitsweise", skills: "Clean Code, DDD, Docker, Agil" },
+    { id: 1, label: "Projektarbeit", skills: "Programmplanung, Budgetierung, Fördermittel" },
+    { id: 2, label: "Vermittlung", skills: "Workshopkonzeption, Moderation, Barrierearme Formate" },
+    { id: 3, label: "Organisation", skills: "Veranstaltungsplanung, Pressearbeit, Kooperationen" },
   ],
-  languages: "Deutsch · Muttersprache\nEnglisch · fließend\nSpanisch · fließend",
-  interests: "Tischtennis, Musik, Gaming, Homelab",
+  languages: "Deutsch · Muttersprache\nEnglisch · sehr gut\nNiederländisch · Grundkenntnisse",
+  interests: "Siebdruck, Urban Gardening, Chorgesang, Küstenwanderungen",
 };
 
 const themes: Array<{ name: ThemeName; label: string; color: string; soft: string; ink: string }> = [
