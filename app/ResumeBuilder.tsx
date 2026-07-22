@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
 type Position = {
   id: number;
@@ -48,6 +48,18 @@ type ResumeData = {
   skills: SkillGroup[];
   languages: string;
   interests: string;
+};
+
+type ResumeSnapshot = {
+  version: 1;
+  exportedAt: string;
+  data: ResumeData;
+  theme: ThemeName;
+  font: FontName;
+  density: DensityName;
+  columnLayout: ColumnLayout;
+  photoShape: PhotoShape;
+  headingStyle: HeadingStyle;
 };
 
 type ThemeName = "sage" | "ink" | "clay" | "plum" | "ocean" | "sand";
@@ -231,6 +243,7 @@ const editorSections: Array<{ id: EditorSection; label: string; number: string }
 ];
 
 const inputClass = "form-input";
+const storageKey = "vita-resume";
 
 function splitLines(value: string) {
   return value.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -300,6 +313,59 @@ function normalizeExperience(value: unknown): Experience[] {
   return normalized.length > 0 ? normalized : initialData.experience;
 }
 
+function isThemeName(value: unknown): value is ThemeName {
+  return themes.some((item) => item.name === value);
+}
+
+function isFontName(value: unknown): value is FontName {
+  return value === "sans" || value === "serif";
+}
+
+function isDensityName(value: unknown): value is DensityName {
+  return value === "compact" || value === "balanced" || value === "airy";
+}
+
+function isColumnLayout(value: unknown): value is ColumnLayout {
+  return value === "experience-left" || value === "experience-right";
+}
+
+function isPhotoShape(value: unknown): value is PhotoShape {
+  return value === "circle" || value === "rounded" || value === "square";
+}
+
+function isHeadingStyle(value: unknown): value is HeadingStyle {
+  return value === "caps" || value === "editorial";
+}
+
+function readResumeSnapshot(raw: string): ResumeSnapshot | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+
+  if (!parsed || typeof parsed !== "object") return null;
+  const snapshot = parsed as Record<string, unknown>;
+  if (snapshot.version !== 1 || typeof snapshot.exportedAt !== "string") return null;
+  if (!snapshot.data || typeof snapshot.data !== "object") return null;
+  if (!isThemeName(snapshot.theme) || !isFontName(snapshot.font) || !isDensityName(snapshot.density) || !isColumnLayout(snapshot.columnLayout) || !isPhotoShape(snapshot.photoShape) || !isHeadingStyle(snapshot.headingStyle)) {
+    return null;
+  }
+
+  return {
+    version: 1,
+    exportedAt: snapshot.exportedAt,
+    data: snapshot.data as ResumeData,
+    theme: snapshot.theme,
+    font: snapshot.font,
+    density: snapshot.density,
+    columnLayout: snapshot.columnLayout,
+    photoShape: snapshot.photoShape,
+    headingStyle: snapshot.headingStyle,
+  };
+}
+
 export function ResumeBuilder() {
   const [data, setData] = useState<ResumeData>(initialData);
   const [theme, setTheme] = useState<ThemeName>("sage");
@@ -313,33 +379,26 @@ export function ResumeBuilder() {
   const [storageReady, setStorageReady] = useState(false);
   const [saveLabel, setSaveLabel] = useState("Automatisch gespeichert");
   const [photoError, setPhotoError] = useState("");
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("vita-resume");
+      const saved = window.localStorage.getItem(storageKey);
       if (saved) {
-        const parsed = JSON.parse(saved) as {
-          data?: ResumeData;
-          theme?: ThemeName;
-          font?: FontName;
-          density?: DensityName;
-          columnLayout?: ColumnLayout;
-          photoShape?: PhotoShape;
-          headingStyle?: HeadingStyle;
-        };
-        if (parsed.data) {
+        const parsed = readResumeSnapshot(saved);
+        if (parsed) {
           setData({
             ...initialData,
             ...parsed.data,
             experience: normalizeExperience(parsed.data.experience),
           });
+          setTheme(parsed.theme);
+          setFont(parsed.font);
+          setDensity(parsed.density);
+          setColumnLayout(parsed.columnLayout);
+          setPhotoShape(parsed.photoShape);
+          setHeadingStyle(parsed.headingStyle);
         }
-        if (parsed.theme) setTheme(parsed.theme);
-        if (parsed.font) setFont(parsed.font);
-        if (parsed.density) setDensity(parsed.density);
-        if (parsed.columnLayout) setColumnLayout(parsed.columnLayout);
-        if (parsed.photoShape) setPhotoShape(parsed.photoShape);
-        if (parsed.headingStyle) setHeadingStyle(parsed.headingStyle);
       }
     } catch {
       // The editor still works when browser storage is unavailable.
@@ -353,10 +412,7 @@ export function ResumeBuilder() {
     setSaveLabel("Speichert …");
     const timer = window.setTimeout(() => {
       try {
-        window.localStorage.setItem(
-          "vita-resume",
-          JSON.stringify({ data, theme, font, density, columnLayout, photoShape, headingStyle }),
-        );
+        window.localStorage.setItem(storageKey, JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data, theme, font, density, columnLayout, photoShape, headingStyle } satisfies ResumeSnapshot));
         setSaveLabel("Automatisch gespeichert");
       } catch {
         setSaveLabel("Nur für diese Sitzung");
@@ -501,6 +557,63 @@ export function ResumeBuilder() {
     setPhotoShape("rounded");
     setHeadingStyle("caps");
     setPhotoError("");
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // Ignore storage failures on reset.
+    }
+  };
+
+  const exportResume = () => {
+    const snapshot: ResumeSnapshot = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+      theme,
+      font,
+      density,
+      columnLayout,
+      photoShape,
+      headingStyle,
+    };
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `vita-resume-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importResume = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const snapshot = readResumeSnapshot(raw);
+      if (!snapshot) {
+        setSaveLabel("Ungültige JSON-Datei");
+        return;
+      }
+
+      setData({
+        ...initialData,
+        ...snapshot.data,
+        experience: normalizeExperience(snapshot.data.experience),
+      });
+      setTheme(snapshot.theme);
+      setFont(snapshot.font);
+      setDensity(snapshot.density);
+      setColumnLayout(snapshot.columnLayout);
+      setPhotoShape(snapshot.photoShape);
+      setHeadingStyle(snapshot.headingStyle);
+      setPhotoError("");
+      setSaveLabel("Importiert");
+    } catch {
+      setSaveLabel("Import fehlgeschlagen");
+    }
   };
 
   return (
@@ -518,10 +631,13 @@ export function ResumeBuilder() {
           <span>{saveLabel}</span>
         </div>
         <div className="header-actions">
+          <button className="button button-quiet" type="button" onClick={exportResume}>JSON exportieren</button>
+          <button className="button button-quiet" type="button" onClick={() => importInputRef.current?.click()}>JSON importieren</button>
           <button className="button button-quiet" type="button" onClick={resetResume}>Zurücksetzen</button>
           <button className="button button-primary" type="button" onClick={() => window.print()}>
             <span aria-hidden="true">↓</span> Als PDF exportieren
           </button>
+          <input ref={importInputRef} className="json-import-input" type="file" accept="application/json,.json" onChange={importResume} />
         </div>
       </header>
 
@@ -537,7 +653,7 @@ export function ResumeBuilder() {
               <p className="eyebrow">Dein Lebenslauf</p>
               <h1>Inhalt bearbeiten</h1>
             </div>
-            <div className="completion-ring" style={{ "--progress": `${completeness * 3.6}deg` } as React.CSSProperties}>
+            <div className="completion-ring" style={{ "--progress": `${completeness * 3.6}deg` } as CSSProperties}>
               <span>{completeness}%</span>
             </div>
           </div>
@@ -879,7 +995,7 @@ export function ResumeBuilder() {
                         onClick={() => setTheme(item.name)}
                         aria-pressed={theme === item.name}
                       >
-                        <span style={{ "--swatch": item.color } as React.CSSProperties} />
+                        <span style={{ "--swatch": item.color } as CSSProperties} />
                         {item.label}
                       </button>
                     ))}
@@ -962,7 +1078,7 @@ export function ResumeBuilder() {
                     key={item.name}
                     type="button"
                     className={theme === item.name ? "active" : ""}
-                    style={{ "--swatch": item.color } as React.CSSProperties}
+                    style={{ "--swatch": item.color } as CSSProperties}
                     onClick={() => setTheme(item.name)}
                     aria-label={`Farbschema ${item.label}`}
                     aria-pressed={theme === item.name}
@@ -991,7 +1107,7 @@ export function ResumeBuilder() {
           <div className="paper-stage">
             <article
               className={`resume-paper resume-font-${font} resume-density-${density} resume-headings-${headingStyle} resume-photo-${photoShape}`}
-              style={{ "--resume-accent": selectedTheme.color, "--resume-soft": selectedTheme.soft, "--resume-ink": selectedTheme.ink } as React.CSSProperties}
+              style={{ "--resume-accent": selectedTheme.color, "--resume-soft": selectedTheme.soft, "--resume-ink": selectedTheme.ink } as CSSProperties}
             >
               <header className="resume-header">
                 <div className="resume-title-block">

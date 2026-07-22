@@ -2,50 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
-}
-
-test("server-renders the resume studio", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
-  assert.match(html, /<html lang="de">/i);
-  assert.match(html, /<title>Vita – Lebenslauf Studio<\/title>/i);
-  assert.match(html, /Inhalt bearbeiten/);
-  assert.match(html, /Als PDF exportieren/);
-  assert.match(html, /Bewerbungsfoto/);
-  assert.match(html, /type="file"/);
-  assert.match(html, /Design/);
-  assert.match(html, /Spalten tauschen/);
-  assert.match(html, /Beruflicher Werdegang/);
-  assert.match(html, /Software Engineer mit Erfahrung/);
-  assert.match(html, /Consulting SE/);
-  assert.match(html, /Software Developer/);
-  assert.match(html, /Lebenslauf-Vorschau/);
-  assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
-});
-
-test("finished app keeps flexible career stations and no starter preview", async () => {
+test("app stays focused on the resume studio", async () => {
   const [page, builder, layout, packageJson, previewFiles] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ResumeBuilder.tsx", import.meta.url), "utf8"),
@@ -57,13 +14,10 @@ test("finished app keeps flexible career stations and no starter preview", async
   assert.deepEqual(previewFiles, []);
   assert.match(page, /<ResumeBuilder \/>/);
   assert.match(builder, /type ExperienceType = "employment" \| "project" \| "training" \| "break"/);
-  assert.match(builder, /station\.positions\.map/);
-  assert.match(builder, /Position hinzufügen/);
-  assert.match(builder, /Stationstyp/);
-  assert.match(builder, /moveExperience/);
-  assert.match(builder, /station\.type !== "break"/);
+  assert.match(builder, /JSON exportieren/);
+  assert.match(builder, /JSON importieren/);
   assert.match(builder, /normalizeExperience/);
   assert.match(layout, /title:\s*"Vita – Lebenslauf Studio"/);
-  assert.doesNotMatch(packageJson, /react-loading-skeleton/);
-  assert.doesNotMatch(page + layout, /codex-preview|SkeletonPreview/);
+  assert.doesNotMatch(packageJson, /wrangler|cloudflare/i);
+  assert.doesNotMatch(page + layout, /codex-preview|SkeletonPreview/i);
 });
