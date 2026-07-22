@@ -243,6 +243,7 @@ const editorSections: Array<{ id: EditorSection; label: string; number: string }
 ];
 
 const inputClass = "form-input";
+const introMaxLength = 700;
 const storageKey = "vita-resume";
 
 function splitLines(value: string) {
@@ -756,10 +757,10 @@ export function ResumeBuilder() {
                     className={`${inputClass} intro-textarea`}
                     value={data.intro}
                     onChange={(event) => setField("intro", event.target.value)}
-                    maxLength={420}
+                    maxLength={introMaxLength}
                     placeholder="Was zeichnet dich aus?"
                   />
-                  <span className="character-count">{data.intro.length} / 420 Zeichen</span>
+                  <span className="character-count">{data.intro.length} / {introMaxLength} Zeichen</span>
                 </label>
                 <div className="writing-tip">
                   <strong>Gute Struktur</strong>
