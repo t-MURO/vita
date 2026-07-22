@@ -20,6 +20,8 @@ body {
 
 body {
   margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: var(--app-bg);
   color: var(--text);
   font-family: var(--font-geist), Arial, sans-serif;
@@ -163,6 +165,7 @@ button {
 
 .builder-shell {
   height: calc(100vh - 74px);
+  height: calc(100dvh - 74px);
   display: grid;
   grid-template-columns: minmax(440px, 36vw) 1fr;
   overflow: hidden;
@@ -1117,8 +1120,9 @@ select.form-input {
 
 .paper-stage {
   flex: 1;
-  padding: 42px 44px 72px;
+  padding: 42px 44px 20px;
   overflow: auto;
+  overscroll-behavior-y: contain;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -1644,6 +1648,7 @@ select.form-input {
 
   .builder-shell {
     height: calc(100vh - 112px);
+    height: calc(100dvh - 112px);
     display: block;
   }
 
@@ -1659,7 +1664,7 @@ select.form-input {
   }
 
   .paper-stage {
-    padding: 24px 18px 50px;
+    padding: 24px 18px 16px;
   }
 
   .resume-paper {
