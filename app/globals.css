@@ -312,22 +312,22 @@ button {
   border: 1px solid #d9dad4;
   border-radius: 12px;
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
   align-items: center;
   gap: 15px;
   background: #fff;
 }
 
 .photo-upload-preview {
-  width: 76px;
-  height: 76px;
+  width: 88px;
+  height: 88px;
   overflow: hidden;
   display: grid;
   place-items: center;
   background: #e8efeb;
   color: #36594e;
   font-family: var(--font-lora), Georgia, serif;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 650;
 }
 
@@ -608,6 +608,101 @@ textarea.form-input {
 
 .compact-grid {
   gap: 12px;
+}
+
+.company-card {
+  padding: 17px;
+}
+
+.company-fields {
+  margin-bottom: 17px;
+}
+
+.positions-heading {
+  padding: 13px 0 11px;
+  border-top: 1px solid #e8e9e4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.positions-heading > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.positions-heading strong {
+  color: #3d403c;
+  font-size: 10px;
+}
+
+.positions-heading > div span {
+  color: #969893;
+  font-size: 8px;
+}
+
+.positions-heading > button {
+  min-height: 29px;
+  padding: 0 10px;
+  border: 1px solid #cfd6d2;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f2f6f4;
+  color: #315448;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.positions-heading > button:hover {
+  background: #e6efeb;
+}
+
+.positions-heading > button span {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.position-editor-list {
+  display: grid;
+  gap: 10px;
+}
+
+.position-editor {
+  padding: 13px;
+  border: 1px solid #e0e2dc;
+  border-radius: 10px;
+  background: #f8f8f5;
+}
+
+.position-editor-header {
+  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.position-editor-header > span {
+  color: #64726c;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.position-editor-header button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a15c51;
+  cursor: pointer;
+  font-size: 8px;
 }
 
 .skill-editor-list {
@@ -1031,12 +1126,12 @@ textarea.form-input {
 .resume-title-block {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 21px;
 }
 
 .resume-portrait {
-  width: 55px;
-  height: 55px;
+  width: 78px;
+  height: 78px;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -1047,7 +1142,7 @@ textarea.form-input {
 
 .resume-portrait span {
   font-family: var(--font-lora), Georgia, serif;
-  font-size: 25px;
+  font-size: 32px;
   font-weight: 600;
 }
 
@@ -1062,7 +1157,7 @@ textarea.form-input {
 }
 
 .resume-photo-rounded .resume-portrait {
-  border-radius: 17px 17px 17px 4px;
+  border-radius: 23px 23px 23px 6px;
 }
 
 .resume-photo-square .resume-portrait {
@@ -1211,6 +1306,54 @@ textarea.form-input {
   font-weight: 750;
 }
 
+.resume-company-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resume-company-heading h4 {
+  font-size: 11.8px;
+}
+
+.resume-company-heading > span {
+  flex: 0 0 auto;
+  color: #858a86;
+  font-size: 8.5px;
+}
+
+.resume-company-positions {
+  margin-top: 9px;
+}
+
+.resume-position + .resume-position {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e8e6;
+}
+
+.resume-position-heading {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resume-position-heading h5 {
+  margin: 0;
+  color: #3e4541;
+  font-size: 10px;
+  font-weight: 720;
+}
+
+.resume-position-heading .entry-period {
+  margin: 0;
+  flex: 0 0 auto;
+  text-align: right;
+}
+
 .entry-company {
   margin: 2px 0 7px;
   color: #727772;
@@ -1309,6 +1452,11 @@ textarea.form-input {
   padding-bottom: 19px;
 }
 
+.resume-density-compact .resume-portrait {
+  width: 70px;
+  height: 70px;
+}
+
 .resume-density-compact .resume-intro {
   margin-top: 19px;
   margin-bottom: 20px;
@@ -1340,6 +1488,11 @@ textarea.form-input {
 
 .resume-density-airy .resume-header {
   padding-bottom: 28px;
+}
+
+.resume-density-airy .resume-portrait {
+  width: 84px;
+  height: 84px;
 }
 
 .resume-density-airy .resume-intro {
@@ -1515,12 +1668,12 @@ textarea.form-input {
   }
 
   .photo-upload-card {
-    grid-template-columns: 62px minmax(0, 1fr);
+    grid-template-columns: 70px minmax(0, 1fr);
   }
 
   .photo-upload-preview {
-    width: 62px;
-    height: 62px;
+    width: 70px;
+    height: 70px;
   }
 
   .design-choice-grid.two-options,

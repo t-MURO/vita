@@ -2,13 +2,18 @@
 
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 
-type Experience = {
+type Position = {
   id: number;
   period: string;
   role: string;
+  bullets: string;
+};
+
+type Experience = {
+  id: number;
   company: string;
   location: string;
-  bullets: string;
+  positions: Position[];
 };
 
 type Education = {
@@ -64,30 +69,38 @@ const initialData: ResumeData = {
   experience: [
     {
       id: 1,
-      period: "04/2024 – heute",
-      role: "Anwendungsentwickler",
       company: "Digital Health GmbH",
       location: "Berlin",
-      bullets:
-        "Entwicklung und Wartung einer Anwendung im medizinischen Umfeld\nZusammenarbeit im agilen Produktteam\nVerbesserung von Qualität und Wartbarkeit bestehender Komponenten",
+      positions: [
+        {
+          id: 101,
+          period: "04/2024 – heute",
+          role: "Anwendungsentwickler",
+          bullets:
+            "Entwicklung und Wartung einer Anwendung im medizinischen Umfeld\nZusammenarbeit im agilen Produktteam\nVerbesserung von Qualität und Wartbarkeit bestehender Komponenten",
+        },
+      ],
     },
     {
       id: 2,
-      period: "01/2021 – 03/2024",
-      role: "Software Engineer",
       company: "Consulting SE",
       location: "Berlin",
-      bullets:
-        "Entwicklung wiederverwendbarer Komponenten nach Domain-Driven-Design-Prinzipien\nModernisierung bestehender Softwarearchitektur durch gezieltes Refactoring\nTechnische Beratung und direkter Austausch mit Kundenteams",
-    },
-    {
-      id: 3,
-      period: "06/2018 – 12/2020",
-      role: "Software Developer",
-      company: "Consulting SE",
-      location: "Berlin",
-      bullets:
-        "Webanwendungen mit Angular und React umgesetzt\nREST-Schnittstellen und Microservices mit Spring und Node.js entwickelt",
+      positions: [
+        {
+          id: 201,
+          period: "01/2021 – 03/2024",
+          role: "Software Engineer",
+          bullets:
+            "Entwicklung wiederverwendbarer Komponenten nach Domain-Driven-Design-Prinzipien\nModernisierung bestehender Softwarearchitektur durch gezieltes Refactoring\nTechnische Beratung und direkter Austausch mit Kundenteams",
+        },
+        {
+          id: 202,
+          period: "06/2018 – 12/2020",
+          role: "Software Developer",
+          bullets:
+            "Webanwendungen mit Angular und React umgesetzt\nREST-Schnittstellen und Microservices mit Spring und Node.js entwickelt",
+        },
+      ],
     },
   ],
   education: [
@@ -139,6 +152,59 @@ function splitLines(value: string) {
   return value.split("\n").map((line) => line.trim()).filter(Boolean);
 }
 
+function normalizeExperience(value: unknown): Experience[] {
+  if (!Array.isArray(value)) return initialData.experience;
+
+  const normalized: Experience[] = [];
+
+  value.forEach((rawItem, companyIndex) => {
+    const item = rawItem && typeof rawItem === "object" ? rawItem as Record<string, unknown> : {};
+    const fallbackCompanyId = Date.now() + companyIndex * 100;
+    const companyId = typeof item.id === "number" ? item.id : fallbackCompanyId;
+    const company = typeof item.company === "string" ? item.company : "";
+    const location = typeof item.location === "string" ? item.location : "";
+
+    if (Array.isArray(item.positions)) {
+      const positions = item.positions.map((rawPosition, positionIndex) => {
+        const position = rawPosition && typeof rawPosition === "object" ? rawPosition as Record<string, unknown> : {};
+        return {
+          id: typeof position.id === "number" ? position.id : companyId * 100 + positionIndex + 1,
+          period: typeof position.period === "string" ? position.period : "",
+          role: typeof position.role === "string" ? position.role : "",
+          bullets: typeof position.bullets === "string" ? position.bullets : "",
+        };
+      });
+
+      normalized.push({
+        id: companyId,
+        company,
+        location,
+        positions: positions.length > 0 ? positions : [{ id: companyId * 100 + 1, period: "", role: "", bullets: "" }],
+      });
+      return;
+    }
+
+    const legacyPosition: Position = {
+      id: companyId * 100 + 1,
+      period: typeof item.period === "string" ? item.period : "",
+      role: typeof item.role === "string" ? item.role : "",
+      bullets: typeof item.bullets === "string" ? item.bullets : "",
+    };
+    const matchingCompany = company.trim()
+      ? normalized.find((entry) => entry.company.trim().toLocaleLowerCase() === company.trim().toLocaleLowerCase()
+          && entry.location.trim().toLocaleLowerCase() === location.trim().toLocaleLowerCase())
+      : undefined;
+
+    if (matchingCompany) {
+      matchingCompany.positions.push(legacyPosition);
+    } else {
+      normalized.push({ id: companyId, company, location, positions: [legacyPosition] });
+    }
+  });
+
+  return normalized.length > 0 ? normalized : initialData.experience;
+}
+
 export function ResumeBuilder() {
   const [data, setData] = useState<ResumeData>(initialData);
   const [theme, setTheme] = useState<ThemeName>("sage");
@@ -166,7 +232,13 @@ export function ResumeBuilder() {
           photoShape?: PhotoShape;
           headingStyle?: HeadingStyle;
         };
-        if (parsed.data) setData({ ...initialData, ...parsed.data });
+        if (parsed.data) {
+          setData({
+            ...initialData,
+            ...parsed.data,
+            experience: normalizeExperience(parsed.data.experience),
+          });
+        }
         if (parsed.theme) setTheme(parsed.theme);
         if (parsed.font) setFont(parsed.font);
         if (parsed.density) setDensity(parsed.density);
@@ -201,7 +273,7 @@ export function ResumeBuilder() {
   const selectedTheme = themes.find((item) => item.name === theme) ?? themes[0];
 
   const completeness = useMemo(() => {
-    const fields = [data.name, data.role, data.email, data.location, data.intro, data.experience[0]?.role, data.education[0]?.degree, data.skills[0]?.skills];
+    const fields = [data.name, data.role, data.email, data.location, data.intro, data.experience[0]?.positions[0]?.role, data.education[0]?.degree, data.skills[0]?.skills];
     return Math.round((fields.filter(Boolean).length / fields.length) * 100);
   }, [data]);
 
@@ -209,10 +281,40 @@ export function ResumeBuilder() {
     setData((current) => ({ ...current, [field]: value }));
   };
 
-  const updateExperience = (id: number, field: keyof Experience, value: string) => {
+  const updateExperience = (id: number, field: "company" | "location", value: string) => {
     setData((current) => ({
       ...current,
       experience: current.experience.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    }));
+  };
+
+  const addPosition = (experienceId: number) => {
+    setData((current) => ({
+      ...current,
+      experience: current.experience.map((item) => item.id === experienceId
+        ? { ...item, positions: [...item.positions, { id: Date.now(), period: "", role: "", bullets: "" }] }
+        : item),
+    }));
+  };
+
+  const updatePosition = (experienceId: number, positionId: number, field: "period" | "role" | "bullets", value: string) => {
+    setData((current) => ({
+      ...current,
+      experience: current.experience.map((item) => item.id === experienceId
+        ? {
+            ...item,
+            positions: item.positions.map((position) => position.id === positionId ? { ...position, [field]: value } : position),
+          }
+        : item),
+    }));
+  };
+
+  const removePosition = (experienceId: number, positionId: number) => {
+    setData((current) => ({
+      ...current,
+      experience: current.experience.map((item) => item.id === experienceId
+        ? { ...item, positions: item.positions.filter((position) => position.id !== positionId) }
+        : item),
     }));
   };
 
@@ -442,30 +544,61 @@ export function ResumeBuilder() {
                   <div>
                     <p>03 / Erfahrung</p>
                     <h2 id="experience-heading">Berufserfahrung</h2>
-                    <span>Beginne mit deiner aktuellen oder letzten Position.</span>
+                    <span>Lege Unternehmen an und gruppiere mehrere Positionen innerhalb derselben Firma.</span>
                   </div>
                   <button
                     className="icon-button"
                     type="button"
-                    aria-label="Position hinzufügen"
-                    onClick={() => setField("experience", [...data.experience, { id: Date.now(), period: "", role: "", company: "", location: "", bullets: "" }])}
+                    aria-label="Unternehmen hinzufügen"
+                    onClick={() => {
+                      const companyId = Date.now();
+                      setField("experience", [...data.experience, {
+                        id: companyId,
+                        company: "",
+                        location: "",
+                        positions: [{ id: companyId + 1, period: "", role: "", bullets: "" }],
+                      }]);
+                    }}
                   >+</button>
                 </div>
-                <div className="entry-list">
-                  {data.experience.map((item, index) => (
-                    <article className="entry-card" key={item.id}>
+                <div className="entry-list company-entry-list">
+                  {data.experience.map((company, companyIndex) => (
+                    <article className="entry-card company-card" key={company.id}>
                       <div className="entry-card-header">
-                        <div><span>{String(index + 1).padStart(2, "0")}</span><strong>{item.role || "Neue Position"}</strong></div>
+                        <div><span>{String(companyIndex + 1).padStart(2, "0")}</span><strong>{company.company || "Neues Unternehmen"}</strong></div>
                         {data.experience.length > 1 && (
-                          <button type="button" onClick={() => setField("experience", data.experience.filter((entry) => entry.id !== item.id))} aria-label={`${item.role || "Position"} entfernen`}>Entfernen</button>
+                          <button type="button" onClick={() => setField("experience", data.experience.filter((entry) => entry.id !== company.id))} aria-label={`${company.company || "Unternehmen"} entfernen`}>Unternehmen entfernen</button>
                         )}
                       </div>
-                      <div className="form-grid two-columns compact-grid">
-                        <label className="field full-width"><span>Position</span><input className={inputClass} value={item.role} onChange={(event) => updateExperience(item.id, "role", event.target.value)} /></label>
-                        <label className="field"><span>Unternehmen</span><input className={inputClass} value={item.company} onChange={(event) => updateExperience(item.id, "company", event.target.value)} /></label>
-                        <label className="field"><span>Ort</span><input className={inputClass} value={item.location} onChange={(event) => updateExperience(item.id, "location", event.target.value)} /></label>
-                        <label className="field full-width"><span>Zeitraum</span><input className={inputClass} value={item.period} onChange={(event) => updateExperience(item.id, "period", event.target.value)} placeholder="MM/JJJJ – MM/JJJJ" /></label>
-                        <label className="field full-width"><span>Erfolge & Aufgaben <em>eine Zeile pro Punkt</em></span><textarea className={`${inputClass} bullets-textarea`} value={item.bullets} onChange={(event) => updateExperience(item.id, "bullets", event.target.value)} /></label>
+                      <div className="form-grid two-columns compact-grid company-fields">
+                        <label className="field"><span>Unternehmen</span><input className={inputClass} value={company.company} onChange={(event) => updateExperience(company.id, "company", event.target.value)} placeholder="Name des Unternehmens" /></label>
+                        <label className="field"><span>Ort</span><input className={inputClass} value={company.location} onChange={(event) => updateExperience(company.id, "location", event.target.value)} placeholder="z. B. Berlin" /></label>
+                      </div>
+
+                      <div className="positions-heading">
+                        <div>
+                          <strong>Positionen</strong>
+                          <span>{company.positions.length} {company.positions.length === 1 ? "Rolle" : "Rollen"}</span>
+                        </div>
+                        <button type="button" onClick={() => addPosition(company.id)}><span aria-hidden="true">+</span> Position hinzufügen</button>
+                      </div>
+
+                      <div className="position-editor-list">
+                        {company.positions.map((position, positionIndex) => (
+                          <section className="position-editor" key={position.id} aria-label={`Position ${positionIndex + 1} bei ${company.company || "Unternehmen"}`}>
+                            <div className="position-editor-header">
+                              <span>Position {String(positionIndex + 1).padStart(2, "0")}</span>
+                              {company.positions.length > 1 && (
+                                <button type="button" onClick={() => removePosition(company.id, position.id)} aria-label={`${position.role || "Position"} entfernen`}>Entfernen</button>
+                              )}
+                            </div>
+                            <div className="form-grid two-columns compact-grid">
+                              <label className="field"><span>Jobtitel</span><input className={inputClass} value={position.role} onChange={(event) => updatePosition(company.id, position.id, "role", event.target.value)} placeholder="z. B. Senior Software Engineer" /></label>
+                              <label className="field"><span>Zeitraum</span><input className={inputClass} value={position.period} onChange={(event) => updatePosition(company.id, position.id, "period", event.target.value)} placeholder="MM/JJJJ – MM/JJJJ" /></label>
+                              <label className="field full-width"><span>Erfolge & Aufgaben <em>eine Zeile pro Punkt</em></span><textarea className={`${inputClass} bullets-textarea`} value={position.bullets} onChange={(event) => updatePosition(company.id, position.id, "bullets", event.target.value)} /></label>
+                            </div>
+                          </section>
+                        ))}
                       </div>
                     </article>
                   ))}
@@ -712,15 +845,26 @@ export function ResumeBuilder() {
                     <section className="resume-section">
                       <h3>Berufserfahrung</h3>
                       <div className="timeline">
-                        {data.experience.map((item) => (
-                          <article className="timeline-entry" key={item.id}>
+                        {data.experience.map((company) => (
+                          <article className="timeline-entry" key={company.id}>
                             <div className="timeline-marker" />
-                            <p className="entry-period">{item.period}</p>
-                            <h4>{item.role || "Position"}</h4>
-                            <p className="entry-company">{item.company}{item.location ? ` · ${item.location}` : ""}</p>
-                            {splitLines(item.bullets).length > 0 && (
-                              <ul>{splitLines(item.bullets).map((bullet, index) => <li key={`${item.id}-${index}`}>{bullet}</li>)}</ul>
-                            )}
+                            <div className="resume-company-heading">
+                              <h4>{company.company || "Unternehmen"}</h4>
+                              {company.location && <span>{company.location}</span>}
+                            </div>
+                            <div className="resume-company-positions">
+                              {company.positions.map((position) => (
+                                <section className="resume-position" key={position.id}>
+                                  <div className="resume-position-heading">
+                                    <h5>{position.role || "Position"}</h5>
+                                    <p className="entry-period">{position.period}</p>
+                                  </div>
+                                  {splitLines(position.bullets).length > 0 && (
+                                    <ul>{splitLines(position.bullets).map((bullet, index) => <li key={`${position.id}-${index}`}>{bullet}</li>)}</ul>
+                                  )}
+                                </section>
+                              ))}
+                            </div>
                           </article>
                         ))}
                       </div>

@@ -38,13 +38,16 @@ test("server-renders the resume studio", async () => {
   assert.match(html, /Design/);
   assert.match(html, /Spalten tauschen/);
   assert.match(html, /Software Engineer mit Erfahrung/);
+  assert.match(html, /Consulting SE/);
+  assert.match(html, /Software Developer/);
   assert.match(html, /Lebenslauf-Vorschau/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("starter preview was removed from the finished app", async () => {
-  const [page, layout, packageJson, previewFiles] = await Promise.all([
+test("finished app keeps grouped experience and no starter preview", async () => {
+  const [page, builder, layout, packageJson, previewFiles] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ResumeBuilder.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readdir(new URL("../app/_sites-preview/", import.meta.url)),
@@ -52,6 +55,9 @@ test("starter preview was removed from the finished app", async () => {
 
   assert.deepEqual(previewFiles, []);
   assert.match(page, /<ResumeBuilder \/>/);
+  assert.match(builder, /company\.positions\.map/);
+  assert.match(builder, /Position hinzufügen/);
+  assert.match(builder, /normalizeExperience/);
   assert.match(layout, /title:\s*"Vita – Lebenslauf Studio"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.doesNotMatch(page + layout, /codex-preview|SkeletonPreview/);
