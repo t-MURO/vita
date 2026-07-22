@@ -9,8 +9,11 @@ type Position = {
   bullets: string;
 };
 
+type ExperienceType = "employment" | "project" | "training" | "break";
+
 type Experience = {
   id: number;
+  type: ExperienceType;
   company: string;
   location: string;
   positions: Position[];
@@ -55,6 +58,22 @@ type PhotoShape = "circle" | "rounded" | "square";
 type HeadingStyle = "caps" | "editorial";
 type EditorSection = "personal" | "intro" | "experience" | "education" | "skills" | "design";
 
+type ExperienceTypeConfig = {
+  value: ExperienceType;
+  label: string;
+  fallbackTitle: string;
+  organizationLabel: string;
+  organizationPlaceholder: string;
+  groupLabel: string;
+  itemSingular: string;
+  itemPlural: string;
+  addLabel: string;
+  roleLabel: string;
+  rolePlaceholder: string;
+  bulletsLabel: string;
+  bulletsPlaceholder: string;
+};
+
 const initialData: ResumeData = {
   photo: "",
   name: "Alex Morgan",
@@ -69,6 +88,7 @@ const initialData: ResumeData = {
   experience: [
     {
       id: 1,
+      type: "employment",
       company: "Digital Health GmbH",
       location: "Berlin",
       positions: [
@@ -83,6 +103,7 @@ const initialData: ResumeData = {
     },
     {
       id: 2,
+      type: "employment",
       company: "Consulting SE",
       location: "Berlin",
       positions: [
@@ -137,10 +158,73 @@ const themes: Array<{ name: ThemeName; label: string; color: string; soft: strin
   { name: "sand", label: "Sand", color: "#8a7042", soft: "#f4f0e6", ink: "#40341f" },
 ];
 
+const experienceTypes: ExperienceTypeConfig[] = [
+  {
+    value: "employment",
+    label: "Anstellung",
+    fallbackTitle: "Neues Unternehmen",
+    organizationLabel: "Unternehmen",
+    organizationPlaceholder: "Name des Unternehmens",
+    groupLabel: "Positionen",
+    itemSingular: "Rolle",
+    itemPlural: "Rollen",
+    addLabel: "Position hinzufügen",
+    roleLabel: "Jobtitel",
+    rolePlaceholder: "z. B. Senior Software Engineer",
+    bulletsLabel: "Erfolge & Aufgaben",
+    bulletsPlaceholder: "Eine Zeile pro Erfolg oder Aufgabe",
+  },
+  {
+    value: "project",
+    label: "Eigenes Projekt",
+    fallbackTitle: "Eigenes Projekt",
+    organizationLabel: "Projekt / Projektgruppe",
+    organizationPlaceholder: "z. B. Vita Resume Studio",
+    groupLabel: "Projektbeiträge",
+    itemSingular: "Beitrag",
+    itemPlural: "Beiträge",
+    addLabel: "Beitrag hinzufügen",
+    roleLabel: "Rolle / Schwerpunkt",
+    rolePlaceholder: "z. B. Konzeption & Entwicklung",
+    bulletsLabel: "Ergebnisse & Beiträge",
+    bulletsPlaceholder: "Eine Zeile pro Ergebnis oder Beitrag",
+  },
+  {
+    value: "training",
+    label: "Weiterbildung",
+    fallbackTitle: "Fachliche Weiterbildung",
+    organizationLabel: "Anbieter / Thema",
+    organizationPlaceholder: "z. B. Fachliche Vertiefung im Selbststudium",
+    groupLabel: "Schwerpunkte",
+    itemSingular: "Schwerpunkt",
+    itemPlural: "Schwerpunkte",
+    addLabel: "Schwerpunkt hinzufügen",
+    roleLabel: "Weiterbildung / Schwerpunkt",
+    rolePlaceholder: "z. B. Generative KI",
+    bulletsLabel: "Inhalte & Ergebnisse",
+    bulletsPlaceholder: "Eine Zeile pro Inhalt oder Lernergebnis",
+  },
+  {
+    value: "break",
+    label: "Auszeit",
+    fallbackTitle: "Berufliche Auszeit",
+    organizationLabel: "",
+    organizationPlaceholder: "",
+    groupLabel: "Details",
+    itemSingular: "Eintrag",
+    itemPlural: "Einträge",
+    addLabel: "Detail hinzufügen",
+    roleLabel: "Bezeichnung",
+    rolePlaceholder: "z. B. Gesundheitlich bedingte Auszeit und Rehabilitation",
+    bulletsLabel: "Optionaler Hinweis",
+    bulletsPlaceholder: "z. B. Rehabilitationsmaßnahme abgeschlossen",
+  },
+];
+
 const editorSections: Array<{ id: EditorSection; label: string; number: string }> = [
   { id: "personal", label: "Persönlich", number: "01" },
   { id: "intro", label: "Intro", number: "02" },
-  { id: "experience", label: "Erfahrung", number: "03" },
+  { id: "experience", label: "Werdegang", number: "03" },
   { id: "education", label: "Ausbildung", number: "04" },
   { id: "skills", label: "Kenntnisse", number: "05" },
   { id: "design", label: "Design", number: "06" },
@@ -152,6 +236,14 @@ function splitLines(value: string) {
   return value.split("\n").map((line) => line.trim()).filter(Boolean);
 }
 
+function isExperienceType(value: unknown): value is ExperienceType {
+  return experienceTypes.some((item) => item.value === value);
+}
+
+function getExperienceTypeConfig(type: ExperienceType) {
+  return experienceTypes.find((item) => item.value === type) ?? experienceTypes[0];
+}
+
 function normalizeExperience(value: unknown): Experience[] {
   if (!Array.isArray(value)) return initialData.experience;
 
@@ -161,6 +253,7 @@ function normalizeExperience(value: unknown): Experience[] {
     const item = rawItem && typeof rawItem === "object" ? rawItem as Record<string, unknown> : {};
     const fallbackCompanyId = Date.now() + companyIndex * 100;
     const companyId = typeof item.id === "number" ? item.id : fallbackCompanyId;
+    const type = isExperienceType(item.type) ? item.type : "employment";
     const company = typeof item.company === "string" ? item.company : "";
     const location = typeof item.location === "string" ? item.location : "";
 
@@ -177,6 +270,7 @@ function normalizeExperience(value: unknown): Experience[] {
 
       normalized.push({
         id: companyId,
+        type,
         company,
         location,
         positions: positions.length > 0 ? positions : [{ id: companyId * 100 + 1, period: "", role: "", bullets: "" }],
@@ -191,14 +285,15 @@ function normalizeExperience(value: unknown): Experience[] {
       bullets: typeof item.bullets === "string" ? item.bullets : "",
     };
     const matchingCompany = company.trim()
-      ? normalized.find((entry) => entry.company.trim().toLocaleLowerCase() === company.trim().toLocaleLowerCase()
+      ? normalized.find((entry) => entry.type === type
+          && entry.company.trim().toLocaleLowerCase() === company.trim().toLocaleLowerCase()
           && entry.location.trim().toLocaleLowerCase() === location.trim().toLocaleLowerCase())
       : undefined;
 
     if (matchingCompany) {
       matchingCompany.positions.push(legacyPosition);
     } else {
-      normalized.push({ id: companyId, company, location, positions: [legacyPosition] });
+      normalized.push({ id: companyId, type, company, location, positions: [legacyPosition] });
     }
   });
 
@@ -286,6 +381,25 @@ export function ResumeBuilder() {
       ...current,
       experience: current.experience.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     }));
+  };
+
+  const updateExperienceType = (id: number, type: ExperienceType) => {
+    setData((current) => ({
+      ...current,
+      experience: current.experience.map((item) => (item.id === id ? { ...item, type } : item)),
+    }));
+  };
+
+  const moveExperience = (id: number, direction: -1 | 1) => {
+    setData((current) => {
+      const currentIndex = current.experience.findIndex((item) => item.id === id);
+      const targetIndex = currentIndex + direction;
+      if (currentIndex < 0 || targetIndex < 0 || targetIndex >= current.experience.length) return current;
+
+      const experience = [...current.experience];
+      [experience[currentIndex], experience[targetIndex]] = [experience[targetIndex], experience[currentIndex]];
+      return { ...current, experience };
+    });
   };
 
   const addPosition = (experienceId: number) => {
@@ -542,18 +656,19 @@ export function ResumeBuilder() {
               <section className="form-section" aria-labelledby="experience-heading">
                 <div className="section-heading with-action">
                   <div>
-                    <p>03 / Erfahrung</p>
-                    <h2 id="experience-heading">Berufserfahrung</h2>
-                    <span>Lege Unternehmen an und gruppiere mehrere Positionen innerhalb derselben Firma.</span>
+                    <p>03 / Werdegang</p>
+                    <h2 id="experience-heading">Beruflicher Werdegang</h2>
+                    <span>Erfasse Anstellungen, eigene Projekte, Weiterbildungen und Auszeiten in der passenden Form.</span>
                   </div>
                   <button
                     className="icon-button"
                     type="button"
-                    aria-label="Unternehmen hinzufügen"
+                    aria-label="Station hinzufügen"
                     onClick={() => {
                       const companyId = Date.now();
                       setField("experience", [...data.experience, {
                         id: companyId,
+                        type: "employment",
                         company: "",
                         location: "",
                         positions: [{ id: companyId + 1, period: "", role: "", bullets: "" }],
@@ -562,46 +677,113 @@ export function ResumeBuilder() {
                   >+</button>
                 </div>
                 <div className="entry-list company-entry-list">
-                  {data.experience.map((company, companyIndex) => (
-                    <article className="entry-card company-card" key={company.id}>
-                      <div className="entry-card-header">
-                        <div><span>{String(companyIndex + 1).padStart(2, "0")}</span><strong>{company.company || "Neues Unternehmen"}</strong></div>
-                        {data.experience.length > 1 && (
-                          <button type="button" onClick={() => setField("experience", data.experience.filter((entry) => entry.id !== company.id))} aria-label={`${company.company || "Unternehmen"} entfernen`}>Unternehmen entfernen</button>
-                        )}
-                      </div>
-                      <div className="form-grid two-columns compact-grid company-fields">
-                        <label className="field"><span>Unternehmen</span><input className={inputClass} value={company.company} onChange={(event) => updateExperience(company.id, "company", event.target.value)} placeholder="Name des Unternehmens" /></label>
-                        <label className="field"><span>Ort</span><input className={inputClass} value={company.location} onChange={(event) => updateExperience(company.id, "location", event.target.value)} placeholder="z. B. Berlin" /></label>
-                      </div>
+                  {data.experience.map((station, stationIndex) => {
+                    const typeConfig = getExperienceTypeConfig(station.type);
+                    const stationTitle = station.type === "break"
+                      ? typeConfig.fallbackTitle
+                      : station.company || typeConfig.fallbackTitle;
 
-                      <div className="positions-heading">
-                        <div>
-                          <strong>Positionen</strong>
-                          <span>{company.positions.length} {company.positions.length === 1 ? "Rolle" : "Rollen"}</span>
+                    return (
+                      <article className="entry-card company-card" key={station.id}>
+                        <div className="entry-card-header">
+                          <div className="station-card-title">
+                            <span>{String(stationIndex + 1).padStart(2, "0")}</span>
+                            <strong>{stationTitle}</strong>
+                          </div>
+                          <div className="station-card-actions">
+                            <div className="station-order-controls" aria-label={`${stationTitle} verschieben`}>
+                              <button
+                                className="station-order-button"
+                                type="button"
+                                onClick={() => moveExperience(station.id, -1)}
+                                aria-label={`${stationTitle} nach oben verschieben`}
+                                title="Nach oben"
+                                disabled={stationIndex === 0}
+                              >↑</button>
+                              <button
+                                className="station-order-button"
+                                type="button"
+                                onClick={() => moveExperience(station.id, 1)}
+                                aria-label={`${stationTitle} nach unten verschieben`}
+                                title="Nach unten"
+                                disabled={stationIndex === data.experience.length - 1}
+                              >↓</button>
+                            </div>
+                            {data.experience.length > 1 && (
+                              <button
+                                className="station-remove-button"
+                                type="button"
+                                onClick={() => setField("experience", data.experience.filter((entry) => entry.id !== station.id))}
+                                aria-label={`${stationTitle} entfernen`}
+                              >Entfernen</button>
+                            )}
+                          </div>
                         </div>
-                        <button type="button" onClick={() => addPosition(company.id)}><span aria-hidden="true">+</span> Position hinzufügen</button>
-                      </div>
 
-                      <div className="position-editor-list">
-                        {company.positions.map((position, positionIndex) => (
-                          <section className="position-editor" key={position.id} aria-label={`Position ${positionIndex + 1} bei ${company.company || "Unternehmen"}`}>
-                            <div className="position-editor-header">
-                              <span>Position {String(positionIndex + 1).padStart(2, "0")}</span>
-                              {company.positions.length > 1 && (
-                                <button type="button" onClick={() => removePosition(company.id, position.id)} aria-label={`${position.role || "Position"} entfernen`}>Entfernen</button>
-                              )}
-                            </div>
-                            <div className="form-grid two-columns compact-grid">
-                              <label className="field"><span>Jobtitel</span><input className={inputClass} value={position.role} onChange={(event) => updatePosition(company.id, position.id, "role", event.target.value)} placeholder="z. B. Senior Software Engineer" /></label>
-                              <label className="field"><span>Zeitraum</span><input className={inputClass} value={position.period} onChange={(event) => updatePosition(company.id, position.id, "period", event.target.value)} placeholder="MM/JJJJ – MM/JJJJ" /></label>
-                              <label className="field full-width"><span>Erfolge & Aufgaben <em>eine Zeile pro Punkt</em></span><textarea className={`${inputClass} bullets-textarea`} value={position.bullets} onChange={(event) => updatePosition(company.id, position.id, "bullets", event.target.value)} /></label>
-                            </div>
-                          </section>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
+                        <div className="form-grid two-columns compact-grid company-fields">
+                          <label className={`field ${station.type === "break" ? "full-width" : ""}`}>
+                            <span>Stationstyp</span>
+                            <select
+                              className={inputClass}
+                              value={station.type}
+                              onChange={(event) => {
+                                if (isExperienceType(event.target.value)) updateExperienceType(station.id, event.target.value);
+                              }}
+                            >
+                              {experienceTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                            </select>
+                          </label>
+                          {station.type !== "break" && (
+                            <>
+                              <label className="field">
+                                <span>{typeConfig.organizationLabel}</span>
+                                <input
+                                  className={inputClass}
+                                  value={station.company}
+                                  onChange={(event) => updateExperience(station.id, "company", event.target.value)}
+                                  placeholder={typeConfig.organizationPlaceholder}
+                                />
+                              </label>
+                              <label className="field">
+                                <span>Ort <em>optional</em></span>
+                                <input className={inputClass} value={station.location} onChange={(event) => updateExperience(station.id, "location", event.target.value)} placeholder="z. B. Berlin" />
+                              </label>
+                            </>
+                          )}
+                        </div>
+
+                        {station.type === "break" && (
+                          <p className="station-hint">Eine neutrale Bezeichnung reicht aus. Medizinische Einzelheiten sind optional.</p>
+                        )}
+
+                        <div className="positions-heading">
+                          <div>
+                            <strong>{typeConfig.groupLabel}</strong>
+                            <span>{station.positions.length} {station.positions.length === 1 ? typeConfig.itemSingular : typeConfig.itemPlural}</span>
+                          </div>
+                          <button type="button" onClick={() => addPosition(station.id)}><span aria-hidden="true">+</span> {typeConfig.addLabel}</button>
+                        </div>
+
+                        <div className="position-editor-list">
+                          {station.positions.map((position, positionIndex) => (
+                            <section className="position-editor" key={position.id} aria-label={`${typeConfig.itemSingular} ${positionIndex + 1} in ${stationTitle}`}>
+                              <div className="position-editor-header">
+                                <span>{typeConfig.itemSingular} {String(positionIndex + 1).padStart(2, "0")}</span>
+                                {station.positions.length > 1 && (
+                                  <button type="button" onClick={() => removePosition(station.id, position.id)} aria-label={`${position.role || typeConfig.itemSingular} entfernen`}>Entfernen</button>
+                                )}
+                              </div>
+                              <div className="form-grid two-columns compact-grid">
+                                <label className="field"><span>{typeConfig.roleLabel}</span><input className={inputClass} value={position.role} onChange={(event) => updatePosition(station.id, position.id, "role", event.target.value)} placeholder={typeConfig.rolePlaceholder} /></label>
+                                <label className="field"><span>Zeitraum</span><input className={inputClass} value={position.period} onChange={(event) => updatePosition(station.id, position.id, "period", event.target.value)} placeholder="MM/JJJJ – MM/JJJJ" /></label>
+                                <label className="field full-width"><span>{typeConfig.bulletsLabel} <em>eine Zeile pro Punkt</em></span><textarea className={`${inputClass} bullets-textarea`} value={position.bullets} onChange={(event) => updatePosition(station.id, position.id, "bullets", event.target.value)} placeholder={typeConfig.bulletsPlaceholder} /></label>
+                              </div>
+                            </section>
+                          ))}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -722,16 +904,16 @@ export function ResumeBuilder() {
                 <div className="design-setting">
                   <div className="design-setting-heading">
                     <strong>Spaltenaufteilung</strong>
-                    <span>{columnLayout === "experience-left" ? "Erfahrung links" : "Erfahrung rechts"}</span>
+                    <span>{columnLayout === "experience-left" ? "Werdegang links" : "Werdegang rechts"}</span>
                   </div>
                   <div className="layout-choice-grid">
                     <button type="button" className={columnLayout === "experience-left" ? "active" : ""} onClick={() => setColumnLayout("experience-left")} aria-pressed={columnLayout === "experience-left"}>
                       <span className="layout-miniature layout-left"><i /><i /></span>
-                      <span><strong>Erfahrung links</strong><small>Ausbildung & Kenntnisse rechts</small></span>
+                      <span><strong>Werdegang links</strong><small>Ausbildung & Kenntnisse rechts</small></span>
                     </button>
                     <button type="button" className={columnLayout === "experience-right" ? "active" : ""} onClick={() => setColumnLayout("experience-right")} aria-pressed={columnLayout === "experience-right"}>
                       <span className="layout-miniature layout-right"><i /><i /></span>
-                      <span><strong>Erfahrung rechts</strong><small>Ausbildung & Kenntnisse links</small></span>
+                      <span><strong>Werdegang rechts</strong><small>Ausbildung & Kenntnisse links</small></span>
                     </button>
                   </div>
                 </div>
@@ -800,7 +982,7 @@ export function ResumeBuilder() {
               className="swap-layout-button"
               type="button"
               onClick={() => setColumnLayout((current) => current === "experience-left" ? "experience-right" : "experience-left")}
-              title="Berufserfahrung und Seitenleiste tauschen"
+              title="Beruflichen Werdegang und Seitenleiste tauschen"
             >
               <span aria-hidden="true">⇄</span> Spalten tauschen
             </button>
@@ -843,30 +1025,38 @@ export function ResumeBuilder() {
                 <div className="resume-main-column">
                   {data.experience.length > 0 && (
                     <section className="resume-section">
-                      <h3>Berufserfahrung</h3>
+                      <h3>Beruflicher Werdegang</h3>
                       <div className="timeline">
-                        {data.experience.map((company) => (
-                          <article className="timeline-entry" key={company.id}>
-                            <div className="timeline-marker" />
-                            <div className="resume-company-heading">
-                              <h4>{company.company || "Unternehmen"}</h4>
-                              {company.location && <span>{company.location}</span>}
-                            </div>
-                            <div className="resume-company-positions">
-                              {company.positions.map((position) => (
-                                <section className="resume-position" key={position.id}>
-                                  <div className="resume-position-heading">
-                                    <h5>{position.role || "Position"}</h5>
-                                    <p className="entry-period">{position.period}</p>
-                                  </div>
-                                  {splitLines(position.bullets).length > 0 && (
-                                    <ul>{splitLines(position.bullets).map((bullet, index) => <li key={`${position.id}-${index}`}>{bullet}</li>)}</ul>
-                                  )}
-                                </section>
-                              ))}
-                            </div>
-                          </article>
-                        ))}
+                        {data.experience.map((station) => {
+                          const typeConfig = getExperienceTypeConfig(station.type);
+                          const stationTitle = station.type === "break"
+                            ? typeConfig.fallbackTitle
+                            : station.company || typeConfig.fallbackTitle;
+
+                          return (
+                            <article className={`timeline-entry timeline-entry-${station.type}`} key={station.id}>
+                              <div className="timeline-marker" />
+                              {station.type !== "employment" && <p className="resume-entry-type">{typeConfig.label}</p>}
+                              <div className="resume-company-heading">
+                                <h4>{stationTitle}</h4>
+                                {station.type !== "break" && station.location && <span>{station.location}</span>}
+                              </div>
+                              <div className="resume-company-positions">
+                                {station.positions.map((position) => (
+                                  <section className="resume-position" key={position.id}>
+                                    <div className="resume-position-heading">
+                                      <h5>{position.role || typeConfig.itemSingular}</h5>
+                                      <p className="entry-period">{position.period}</p>
+                                    </div>
+                                    {splitLines(position.bullets).length > 0 && (
+                                      <ul>{splitLines(position.bullets).map((bullet, index) => <li key={`${position.id}-${index}`}>{bullet}</li>)}</ul>
+                                    )}
+                                  </section>
+                                ))}
+                              </div>
+                            </article>
+                          );
+                        })}
                       </div>
                     </section>
                   )}

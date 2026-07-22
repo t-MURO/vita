@@ -481,6 +481,10 @@ textarea.form-input {
   resize: vertical;
 }
 
+select.form-input {
+  cursor: pointer;
+}
+
 .intro-textarea {
   min-height: 170px;
 }
@@ -577,7 +581,7 @@ textarea.form-input {
   gap: 12px;
 }
 
-.entry-card-header div {
+.entry-card-header > div:first-child {
   min-width: 0;
   display: flex;
   align-items: center;
@@ -606,6 +610,50 @@ textarea.form-input {
   font-size: 9px;
 }
 
+.station-card-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.entry-card-header .station-order-controls {
+  min-width: auto;
+  overflow: hidden;
+  border: 1px solid #d6d9d4;
+  border-radius: 7px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.entry-card-header .station-order-button {
+  width: 27px;
+  height: 25px;
+  border: 0;
+  border-right: 1px solid #dfe1dd;
+  display: grid;
+  place-items: center;
+  background: #f8f9f6;
+  color: #52645d;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.entry-card-header .station-order-button:last-child {
+  border-right: 0;
+}
+
+.entry-card-header .station-order-button:hover:not(:disabled) {
+  background: #edf2ef;
+  color: #315448;
+}
+
+.entry-card-header .station-order-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
 .compact-grid {
   gap: 12px;
 }
@@ -616,6 +664,16 @@ textarea.form-input {
 
 .company-fields {
   margin-bottom: 17px;
+}
+
+.station-hint {
+  margin: -4px 0 17px;
+  padding: 10px 11px;
+  border-radius: 8px;
+  background: #f1f5f3;
+  color: #617068;
+  font-size: 9.5px;
+  line-height: 1.45;
 }
 
 .positions-heading {
@@ -1311,6 +1369,27 @@ textarea.form-input {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+}
+
+.resume-entry-type {
+  margin: 0 0 4px;
+  color: var(--resume-accent);
+  font-size: 7.2px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.timeline-entry-project .timeline-marker {
+  border-radius: 2px;
+}
+
+.timeline-entry-training .timeline-marker {
+  background: white;
+}
+
+.timeline-entry-break .timeline-marker {
+  background: var(--resume-soft);
 }
 
 .resume-company-heading h4 {

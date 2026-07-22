@@ -37,6 +37,7 @@ test("server-renders the resume studio", async () => {
   assert.match(html, /type="file"/);
   assert.match(html, /Design/);
   assert.match(html, /Spalten tauschen/);
+  assert.match(html, /Beruflicher Werdegang/);
   assert.match(html, /Software Engineer mit Erfahrung/);
   assert.match(html, /Consulting SE/);
   assert.match(html, /Software Developer/);
@@ -44,7 +45,7 @@ test("server-renders the resume studio", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("finished app keeps grouped experience and no starter preview", async () => {
+test("finished app keeps flexible career stations and no starter preview", async () => {
   const [page, builder, layout, packageJson, previewFiles] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ResumeBuilder.tsx", import.meta.url), "utf8"),
@@ -55,8 +56,12 @@ test("finished app keeps grouped experience and no starter preview", async () =>
 
   assert.deepEqual(previewFiles, []);
   assert.match(page, /<ResumeBuilder \/>/);
-  assert.match(builder, /company\.positions\.map/);
+  assert.match(builder, /type ExperienceType = "employment" \| "project" \| "training" \| "break"/);
+  assert.match(builder, /station\.positions\.map/);
   assert.match(builder, /Position hinzufügen/);
+  assert.match(builder, /Stationstyp/);
+  assert.match(builder, /moveExperience/);
+  assert.match(builder, /station\.type !== "break"/);
   assert.match(builder, /normalizeExperience/);
   assert.match(layout, /title:\s*"Vita – Lebenslauf Studio"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
