@@ -1051,106 +1051,6 @@ select.form-input {
   overflow: hidden;
 }
 
-.preview-toolbar {
-  min-height: 64px;
-  padding: 10px 28px;
-  border-bottom: 1px solid #d2d2cc;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 28px;
-  background: rgba(242, 241, 237, 0.88);
-}
-
-.theme-controls,
-.font-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.theme-controls > span,
-.font-controls > span {
-  color: #777a74;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.theme-options {
-  display: flex;
-  gap: 6px;
-}
-
-.theme-options button {
-  --swatch: #376b5d;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 4px solid #f2f1ed;
-  border-radius: 50%;
-  background: var(--swatch);
-  box-shadow: 0 0 0 1px transparent;
-  cursor: pointer;
-}
-
-.theme-options button:hover,
-.theme-options button.active {
-  box-shadow: 0 0 0 1px #676a65;
-}
-
-.font-controls > div {
-  padding: 3px;
-  border: 1px solid #d3d3cd;
-  border-radius: 9px;
-  display: flex;
-  background: #ebeae6;
-}
-
-.font-controls button {
-  min-height: 27px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #747671;
-  cursor: pointer;
-  font-size: 10px;
-}
-
-.font-controls button.active {
-  background: white;
-  color: #2e312d;
-  box-shadow: 0 1px 3px rgba(31, 34, 31, 0.11);
-}
-
-.swap-layout-button {
-  min-height: 34px;
-  padding: 0 11px;
-  border: 1px solid #d1d2cc;
-  border-radius: 9px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #f8f8f5;
-  color: #555953;
-  cursor: pointer;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.swap-layout-button:hover {
-  border-color: #9ba9a3;
-  background: white;
-}
-
-.swap-layout-button span {
-  color: #376b5d;
-  font-size: 15px;
-  line-height: 1;
-}
-
 .paper-stage {
   flex: 1;
   padding: 42px 44px 72px;
@@ -1690,12 +1590,6 @@ select.form-input {
     display: flex;
   }
 
-  .preview-toolbar {
-    padding: 10px 14px;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
   .paper-stage {
     padding: 24px 18px 50px;
   }
@@ -1749,15 +1643,6 @@ select.form-input {
     grid-column: auto;
   }
 
-  .theme-controls > span,
-  .font-controls > span {
-    display: none;
-  }
-
-  .font-controls {
-    display: none;
-  }
-
   .photo-upload-card {
     grid-template-columns: 76px minmax(0, 1fr);
   }
@@ -1799,8 +1684,7 @@ select.form-input {
 
   .app-header,
   .mobile-view-switch,
-  .editor-panel,
-  .preview-toolbar {
+  .editor-panel {
     display: none !important;
   }
 

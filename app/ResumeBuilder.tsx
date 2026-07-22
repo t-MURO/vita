@@ -1069,41 +1069,6 @@ export function ResumeBuilder() {
         </aside>
 
         <section className={`preview-panel ${mobileView === "preview" ? "mobile-active" : ""}`} aria-label="Lebenslauf-Vorschau">
-          <div className="preview-toolbar">
-            <div className="theme-controls">
-              <span>Farbe</span>
-              <div className="theme-options">
-                {themes.map((item) => (
-                  <button
-                    key={item.name}
-                    type="button"
-                    className={theme === item.name ? "active" : ""}
-                    style={{ "--swatch": item.color } as CSSProperties}
-                    onClick={() => setTheme(item.name)}
-                    aria-label={`Farbschema ${item.label}`}
-                    aria-pressed={theme === item.name}
-                    title={item.label}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="font-controls">
-              <span>Schrift</span>
-              <div>
-                <button className={font === "sans" ? "active" : ""} type="button" onClick={() => setFont("sans")} aria-pressed={font === "sans"}>Modern</button>
-                <button className={font === "serif" ? "active" : ""} type="button" onClick={() => setFont("serif")} aria-pressed={font === "serif"}>Klassisch</button>
-              </div>
-            </div>
-            <button
-              className="swap-layout-button"
-              type="button"
-              onClick={() => setColumnLayout((current) => current === "experience-left" ? "experience-right" : "experience-left")}
-              title="Beruflichen Werdegang und Seitenleiste tauschen"
-            >
-              <span aria-hidden="true">⇄</span> Spalten tauschen
-            </button>
-          </div>
-
           <div className="paper-stage">
             <article
               className={`resume-paper resume-font-${font} resume-density-${density} resume-headings-${headingStyle} resume-photo-${photoShape}`}
