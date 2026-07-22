@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+dist
+.wrangler
+.git
+.DS_Store
+tests
+README.md
+Dockerfile
