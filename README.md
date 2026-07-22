@@ -26,7 +26,7 @@ continue working in another browser.
 - Circle, rounded, and square photo treatments
 - Automatic local saving without an account
 - Versioned JSON import and export, including the selected design settings
-- Print-optimized PDF export through the browser
+- Print-optimized, single-page A4 PDF export through the browser
 - Responsive edit/preview switch for smaller screens
 
 ## Privacy and data storage
@@ -129,7 +129,8 @@ The production image uses a multi-stage build and runs as an unprivileged user.
 2. Select **Als PDF exportieren**.
 3. Choose **Save as PDF** in the browser print dialog.
 4. Use A4 paper size and enable background graphics if the selected browser
-   omits color accents by default.
+   omits color accents by default. Content that exceeds the page is
+   automatically scaled so the resume remains on one A4 page.
 
 The exported PDF is generated entirely by the browser; no resume data is sent
 to a server for conversion.
@@ -158,6 +159,7 @@ docker-compose.yaml     # Local container setup
 ## Current limitations
 
 - Drafts are local to one browser unless manually exported.
-- PDF pagination depends on the browser print engine and the amount of content.
+- Very dense resumes are scaled down to stay on one A4 page and can therefore
+  become harder to read.
 - There is currently one resume layout with configurable visual variants rather
   than multiple independent templates.

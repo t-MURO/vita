@@ -1746,7 +1746,9 @@ select.form-input {
   html,
   body {
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
+    min-height: 0;
+    overflow: hidden;
     background: white;
   }
 
@@ -1761,29 +1763,46 @@ select.form-input {
   .preview-panel,
   .paper-stage {
     width: 210mm;
-    height: auto;
-    min-height: 297mm;
+    height: 297mm;
+    min-height: 0;
     display: block !important;
     padding: 0;
-    overflow: visible;
+    overflow: hidden;
     background: white;
   }
 
+  .paper-stage {
+    position: relative;
+  }
+
   .resume-paper {
-    width: 210mm;
-    min-height: 297mm;
+    --print-scale: 1;
+    --print-paper-width: 210mm;
+    --print-paper-height: 297mm;
+    --print-padding-top: 15mm;
+    --print-padding-inline: 16.4mm;
+    --print-padding-bottom: 9mm;
+    --print-footer-inline: 16.4mm;
+    --print-footer-bottom: 6.5mm;
+    width: var(--print-paper-width);
+    height: var(--print-paper-height);
+    min-height: 0;
     margin: 0;
-    padding: 15mm 16.4mm 9mm;
-    transform: none;
+    padding: var(--print-padding-top) var(--print-padding-inline) var(--print-padding-bottom);
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: scale(var(--print-scale));
+    transform-origin: top left;
     box-shadow: none;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
   .resume-paper .resume-footer {
-    right: 16.4mm;
-    bottom: 6.5mm;
-    left: 16.4mm;
+    right: var(--print-footer-inline);
+    bottom: var(--print-footer-bottom);
+    left: var(--print-footer-inline);
   }
 }
 

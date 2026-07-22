@@ -248,6 +248,41 @@ const editorSections: Array<{ id: EditorSection; label: string; number: string }
 const inputClass = "form-input";
 const introMaxLength = 700;
 const storageKey = "vita-resume";
+const printPageWidthMm = 210;
+const printPageHeightMm = 297;
+const printPageHeightPx = 1123;
+const printFooterReservePx = 72;
+
+function applyPrintScale(paper: HTMLElement, scale: number) {
+  const inverseScale = 1 / scale;
+  paper.style.setProperty("--print-scale", scale.toFixed(5));
+  paper.style.setProperty("--print-paper-width", `${printPageWidthMm * inverseScale}mm`);
+  paper.style.setProperty("--print-paper-height", `${printPageHeightMm * inverseScale}mm`);
+  paper.style.setProperty("--print-padding-top", `${15 * inverseScale}mm`);
+  paper.style.setProperty("--print-padding-inline", `${16.4 * inverseScale}mm`);
+  paper.style.setProperty("--print-padding-bottom", `${9 * inverseScale}mm`);
+  paper.style.setProperty("--print-footer-inline", `${16.4 * inverseScale}mm`);
+  paper.style.setProperty("--print-footer-bottom", `${6.5 * inverseScale}mm`);
+}
+
+function fitResumeToSinglePrintPage(paper: HTMLElement | null) {
+  if (!paper) return;
+
+  applyPrintScale(paper, 1);
+  paper.getBoundingClientRect();
+
+  const columns = paper.querySelector<HTMLElement>(".resume-columns");
+  const contentBottom = columns ? columns.offsetTop + columns.offsetHeight : paper.scrollHeight;
+  const requiredHeight = Math.max(
+    printPageHeightPx,
+    paper.scrollHeight,
+    contentBottom + printFooterReservePx,
+  );
+  const scale = Math.min(1, printPageHeightPx / requiredHeight);
+
+  applyPrintScale(paper, scale);
+  paper.dataset.printScale = scale.toFixed(3);
+}
 
 function splitLines(value: string) {
   return value.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -387,6 +422,7 @@ export function ResumeBuilder() {
   const [saveLabel, setSaveLabel] = useState("Automatisch gespeichert");
   const [photoError, setPhotoError] = useState("");
   const importInputRef = useRef<HTMLInputElement>(null);
+  const resumePaperRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     try {
@@ -427,6 +463,12 @@ export function ResumeBuilder() {
     }, 350);
     return () => window.clearTimeout(timer);
   }, [data, theme, font, density, columnLayout, photoShape, headingStyle, storageReady]);
+
+  useEffect(() => {
+    const preparePrint = () => fitResumeToSinglePrintPage(resumePaperRef.current);
+    window.addEventListener("beforeprint", preparePrint);
+    return () => window.removeEventListener("beforeprint", preparePrint);
+  }, []);
 
   const selectedTheme = themes.find((item) => item.name === theme) ?? themes[0];
 
@@ -650,7 +692,14 @@ export function ResumeBuilder() {
           <button className="button button-quiet" type="button" onClick={exportResume}>JSON exportieren</button>
           <button className="button button-quiet" type="button" onClick={() => importInputRef.current?.click()}>JSON importieren</button>
           <button className="button button-quiet" type="button" onClick={resetResume}>Zurücksetzen</button>
-          <button className="button button-primary" type="button" onClick={() => window.print()}>
+          <button
+            className="button button-primary"
+            type="button"
+            onClick={() => {
+              fitResumeToSinglePrintPage(resumePaperRef.current);
+              window.print();
+            }}
+          >
             <span aria-hidden="true">↓</span> Als PDF exportieren
           </button>
           <input ref={importInputRef} className="json-import-input" type="file" accept="application/json,.json" onChange={importResume} />
@@ -1098,6 +1147,7 @@ export function ResumeBuilder() {
         <section className={`preview-panel ${mobileView === "preview" ? "mobile-active" : ""}`} aria-label="Lebenslauf-Vorschau">
           <div className="paper-stage">
             <article
+              ref={resumePaperRef}
               className={`resume-paper resume-font-${font} resume-density-${density} resume-headings-${headingStyle} resume-photo-${photoShape}`}
               style={{ "--resume-accent": selectedTheme.color, "--resume-soft": selectedTheme.soft, "--resume-ink": selectedTheme.ink } as CSSProperties}
             >

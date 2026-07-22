@@ -19,6 +19,8 @@ test("app stays focused on the resume studio", async () => {
   assert.match(builder, /const introMaxLength = 700/);
   assert.match(builder, /Stationstitel anzeigen/);
   assert.match(builder, /timeline-entry-title-hidden/);
+  assert.match(builder, /fitResumeToSinglePrintPage/);
+  assert.match(builder, /beforeprint/);
   assert.match(builder, /normalizeExperience/);
   assert.match(layout, /title:\s*"Vita – Lebenslauf Studio"/);
   assert.doesNotMatch(packageJson, /wrangler|cloudflare/i);
