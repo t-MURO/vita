@@ -883,16 +883,15 @@ export function ResumeBuilder() {
                               </label>
                             </>
                           )}
-                          <label className="station-title-option">
+                          <label className="station-title-toggle">
                             <input
+                              className="station-title-toggle-input"
                               type="checkbox"
                               checked={station.showTitle}
                               onChange={(event) => updateExperienceTitleVisibility(station.id, event.target.checked)}
                             />
-                            <span>
-                              <strong>Titel in Vorschau anzeigen</strong>
-                              <small>Deaktivieren, wenn die Typbezeichnung allein ausreicht.</small>
-                            </span>
+                            <span className="station-title-toggle-track" aria-hidden="true" />
+                            <span>Stationstitel anzeigen</span>
                           </label>
                         </div>
 
