@@ -17,6 +17,7 @@ continue working in another browser.
   training, and career breaks
 - Multiple roles grouped under the same employer or project
 - Reordering of career entries for a clear reverse-chronological timeline
+- Optional hiding of redundant station titles in the resume preview
 - Live A4 preview while editing
 - Six color themes, modern and classic typefaces, two heading styles, and three
   spacing densities

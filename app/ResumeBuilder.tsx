@@ -14,6 +14,7 @@ type ExperienceType = "employment" | "project" | "training" | "break";
 type Experience = {
   id: number;
   type: ExperienceType;
+  showTitle: boolean;
   company: string;
   location: string;
   positions: Position[];
@@ -101,6 +102,7 @@ const initialData: ResumeData = {
     {
       id: 1,
       type: "employment",
+      showTitle: true,
       company: "Museum am Fluss",
       location: "Freiburg",
       positions: [
@@ -116,6 +118,7 @@ const initialData: ResumeData = {
     {
       id: 2,
       type: "employment",
+      showTitle: true,
       company: "Kulturforum Nordlicht",
       location: "Kiel",
       positions: [
@@ -268,6 +271,7 @@ function normalizeExperience(value: unknown): Experience[] {
     const fallbackCompanyId = Date.now() + companyIndex * 100;
     const companyId = typeof item.id === "number" ? item.id : fallbackCompanyId;
     const type = isExperienceType(item.type) ? item.type : "employment";
+    const showTitle = typeof item.showTitle === "boolean" ? item.showTitle : type !== "break";
     const company = typeof item.company === "string" ? item.company : "";
     const location = typeof item.location === "string" ? item.location : "";
 
@@ -285,6 +289,7 @@ function normalizeExperience(value: unknown): Experience[] {
       normalized.push({
         id: companyId,
         type,
+        showTitle,
         company,
         location,
         positions: positions.length > 0 ? positions : [{ id: companyId * 100 + 1, period: "", role: "", bullets: "" }],
@@ -300,6 +305,7 @@ function normalizeExperience(value: unknown): Experience[] {
     };
     const matchingCompany = company.trim()
       ? normalized.find((entry) => entry.type === type
+          && entry.showTitle === showTitle
           && entry.company.trim().toLocaleLowerCase() === company.trim().toLocaleLowerCase()
           && entry.location.trim().toLocaleLowerCase() === location.trim().toLocaleLowerCase())
       : undefined;
@@ -307,7 +313,7 @@ function normalizeExperience(value: unknown): Experience[] {
     if (matchingCompany) {
       matchingCompany.positions.push(legacyPosition);
     } else {
-      normalized.push({ id: companyId, type, company, location, positions: [legacyPosition] });
+      normalized.push({ id: companyId, type, showTitle, company, location, positions: [legacyPosition] });
     }
   });
 
@@ -443,7 +449,16 @@ export function ResumeBuilder() {
   const updateExperienceType = (id: number, type: ExperienceType) => {
     setData((current) => ({
       ...current,
-      experience: current.experience.map((item) => (item.id === id ? { ...item, type } : item)),
+      experience: current.experience.map((item) => (item.id === id
+        ? { ...item, type, showTitle: item.type === type ? item.showTitle : type !== "break" }
+        : item)),
+    }));
+  };
+
+  const updateExperienceTitleVisibility = (id: number, showTitle: boolean) => {
+    setData((current) => ({
+      ...current,
+      experience: current.experience.map((item) => (item.id === id ? { ...item, showTitle } : item)),
     }));
   };
 
@@ -786,6 +801,7 @@ export function ResumeBuilder() {
                       setField("experience", [...data.experience, {
                         id: companyId,
                         type: "employment",
+                        showTitle: true,
                         company: "",
                         location: "",
                         positions: [{ id: companyId + 1, period: "", role: "", bullets: "" }],
@@ -867,6 +883,17 @@ export function ResumeBuilder() {
                               </label>
                             </>
                           )}
+                          <label className="station-title-option">
+                            <input
+                              type="checkbox"
+                              checked={station.showTitle}
+                              onChange={(event) => updateExperienceTitleVisibility(station.id, event.target.checked)}
+                            />
+                            <span>
+                              <strong>Titel in Vorschau anzeigen</strong>
+                              <small>Deaktivieren, wenn die Typbezeichnung allein ausreicht.</small>
+                            </span>
+                          </label>
                         </div>
 
                         {station.type === "break" && (
@@ -1116,13 +1143,15 @@ export function ResumeBuilder() {
                             : station.company || typeConfig.fallbackTitle;
 
                           return (
-                            <article className={`timeline-entry timeline-entry-${station.type}`} key={station.id}>
+                            <article className={`timeline-entry timeline-entry-${station.type} ${station.showTitle ? "" : "timeline-entry-title-hidden"}`} key={station.id}>
                               <div className="timeline-marker" />
-                              {station.type !== "employment" && <p className="resume-entry-type">{typeConfig.label}</p>}
-                              <div className="resume-company-heading">
-                                <h4>{stationTitle}</h4>
-                                {station.type !== "break" && station.location && <span>{station.location}</span>}
-                              </div>
+                              {(station.type !== "employment" || !station.showTitle) && <p className="resume-entry-type">{typeConfig.label}</p>}
+                              {station.showTitle && (
+                                <div className="resume-company-heading">
+                                  <h4>{stationTitle}</h4>
+                                  {station.type !== "break" && station.location && <span>{station.location}</span>}
+                                </div>
+                              )}
                               <div className="resume-company-positions">
                                 {station.positions.map((position) => (
                                   <section className="resume-position" key={position.id}>
