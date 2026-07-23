@@ -13,7 +13,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Vita – Lebenslauf Studio",
+  title: "Lebenslauf",
   description: "Erstelle einen klaren, professionellen Lebenslauf mit Live-Vorschau und PDF-Export.",
   icons: {
     icon: "/favicon.svg",

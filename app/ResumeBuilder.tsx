@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type Position = {
   id: number;
@@ -248,44 +248,75 @@ const editorSections: Array<{ id: EditorSection; label: string; number: string }
 const inputClass = "form-input";
 const introMaxLength = 700;
 const storageKey = "vita-resume";
-const printPageWidthMm = 210;
-const printPageHeightMm = 297;
-const printPageHeightPx = 1123;
-const printFooterReservePx = 72;
-
-function applyPrintScale(paper: HTMLElement, scale: number) {
-  const inverseScale = 1 / scale;
-  paper.style.setProperty("--print-scale", scale.toFixed(5));
-  paper.style.setProperty("--print-paper-width", `${printPageWidthMm * inverseScale}mm`);
-  paper.style.setProperty("--print-paper-height", `${printPageHeightMm * inverseScale}mm`);
-  paper.style.setProperty("--print-padding-top", `${15 * inverseScale}mm`);
-  paper.style.setProperty("--print-padding-inline", `${16.4 * inverseScale}mm`);
-  paper.style.setProperty("--print-padding-bottom", `${9 * inverseScale}mm`);
-  paper.style.setProperty("--print-footer-inline", `${16.4 * inverseScale}mm`);
-  paper.style.setProperty("--print-footer-bottom", `${6.5 * inverseScale}mm`);
-}
-
-function fitResumeToSinglePrintPage(paper: HTMLElement | null) {
-  if (!paper) return;
-
-  applyPrintScale(paper, 1);
-  paper.getBoundingClientRect();
-
-  const columns = paper.querySelector<HTMLElement>(".resume-columns");
-  const contentBottom = columns ? columns.offsetTop + columns.offsetHeight : paper.scrollHeight;
-  const requiredHeight = Math.max(
-    printPageHeightPx,
-    paper.scrollHeight,
-    contentBottom + printFooterReservePx,
-  );
-  const scale = Math.min(1, printPageHeightPx / requiredHeight);
-
-  applyPrintScale(paper, scale);
-  paper.dataset.printScale = scale.toFixed(3);
-}
+const printPageCapacity = 60;
+const printPageHeight = 1123;
+const printFooterReserve = 52;
 
 function splitLines(value: string) {
   return value.split("\n").map((line) => line.trim()).filter(Boolean);
+}
+
+function getPrintBreakIds(data: ResumeData) {
+  const wrappedLines = (value: string, charactersPerLine = 70) => splitLines(value)
+    .reduce((total, line) => total + Math.max(1, Math.ceil(line.length / charactersPerLine)), 0);
+  const stationWeights = data.experience.map((station) => (
+    3 + station.positions.reduce((total, position) => (
+      total + 2 + wrappedLines(position.bullets)
+    ), 0)
+  ));
+  const sideWeight = Math.ceil((
+    data.education.length * 4
+    + data.skills.reduce((total, skill) => total + 2 + wrappedLines(skill.skills, 32), 0)
+    + wrappedLines(data.languages, 32)
+    + wrappedLines(data.interests, 32)
+  ) / 2) + 3;
+  const headerWeight = 12 + wrappedLines(data.intro);
+  const totalWeight = headerWeight
+    + stationWeights.reduce((total, weight) => total + weight, 0)
+    + sideWeight;
+  const pageCount = Math.ceil(totalWeight / printPageCapacity);
+
+  if (pageCount <= 1 || data.experience.length < 2) return new Set<number>();
+
+  const targetWeight = totalWeight / pageCount;
+  const boundaries = stationWeights.slice(0, -1).map((weight, index) => ({
+    index: index + 1,
+    weight: headerWeight + stationWeights.slice(0, index + 1).reduce((total, item) => total + item, 0),
+  }));
+  const breakIds = new Set<number>();
+  let previousBoundary = 0;
+
+  for (let page = 1; page < pageCount; page += 1) {
+    const candidates = boundaries.filter((boundary) => boundary.index > previousBoundary);
+    if (candidates.length === 0) break;
+    const target = targetWeight * page;
+    const closest = candidates.reduce((best, candidate) => (
+      Math.abs(candidate.weight - target) < Math.abs(best.weight - target) ? candidate : best
+    ));
+    breakIds.add(data.experience[closest.index].id);
+    previousBoundary = closest.index;
+  }
+
+  return breakIds;
+}
+
+function measurePrintBreakIds(paper: HTMLElement | null, data: ResumeData) {
+  if (!paper) return new Set<number>();
+
+  const clone = paper.cloneNode(true) as HTMLElement;
+  clone.classList.remove("print-layout-paginated");
+  clone.classList.add("print-measure-clone");
+  clone.querySelectorAll(".print-page-break-before").forEach((entry) => {
+    entry.classList.remove("print-page-break-before");
+  });
+  document.body.append(clone);
+
+  const columns = clone.querySelector<HTMLElement>(".resume-columns");
+  const contentBottom = columns ? columns.offsetTop + columns.offsetHeight : clone.scrollHeight;
+  const needsPagination = contentBottom + printFooterReserve > printPageHeight;
+  clone.remove();
+
+  return needsPagination ? getPrintBreakIds(data) : new Set<number>();
 }
 
 function isExperienceType(value: unknown): value is ExperienceType {
@@ -421,6 +452,7 @@ export function ResumeBuilder() {
   const [storageReady, setStorageReady] = useState(false);
   const [saveLabel, setSaveLabel] = useState("Automatisch gespeichert");
   const [photoError, setPhotoError] = useState("");
+  const [printBreakIds, setPrintBreakIds] = useState<Set<number>>(() => new Set());
   const importInputRef = useRef<HTMLInputElement>(null);
   const resumePaperRef = useRef<HTMLElement>(null);
 
@@ -464,18 +496,21 @@ export function ResumeBuilder() {
     return () => window.clearTimeout(timer);
   }, [data, theme, font, density, columnLayout, photoShape, headingStyle, storageReady]);
 
-  useEffect(() => {
-    const preparePrint = () => fitResumeToSinglePrintPage(resumePaperRef.current);
-    window.addEventListener("beforeprint", preparePrint);
-    return () => window.removeEventListener("beforeprint", preparePrint);
-  }, []);
-
   const selectedTheme = themes.find((item) => item.name === theme) ?? themes[0];
+  const formattedPrintDate = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date());
 
   const completeness = useMemo(() => {
     const fields = [data.name, data.role, data.email, data.location, data.intro, data.experience[0]?.positions[0]?.role, data.education[0]?.degree, data.skills[0]?.skills];
     return Math.round((fields.filter(Boolean).length / fields.length) * 100);
   }, [data]);
+
+  useLayoutEffect(() => {
+    setPrintBreakIds(measurePrintBreakIds(resumePaperRef.current, data));
+  }, [data, font, density, columnLayout, photoShape, headingStyle]);
 
   const setField = <K extends keyof ResumeData>(field: K, value: ResumeData[K]) => {
     setData((current) => ({ ...current, [field]: value }));
@@ -695,10 +730,7 @@ export function ResumeBuilder() {
           <button
             className="button button-primary"
             type="button"
-            onClick={() => {
-              fitResumeToSinglePrintPage(resumePaperRef.current);
-              window.print();
-            }}
+            onClick={() => window.print()}
           >
             <span aria-hidden="true">↓</span> Als PDF exportieren
           </button>
@@ -1148,7 +1180,7 @@ export function ResumeBuilder() {
           <div className="paper-stage">
             <article
               ref={resumePaperRef}
-              className={`resume-paper resume-font-${font} resume-density-${density} resume-headings-${headingStyle} resume-photo-${photoShape}`}
+              className={`resume-paper resume-font-${font} resume-density-${density} resume-headings-${headingStyle} resume-photo-${photoShape} ${printBreakIds.size > 0 ? "print-layout-paginated" : ""}`}
               style={{ "--resume-accent": selectedTheme.color, "--resume-soft": selectedTheme.soft, "--resume-ink": selectedTheme.ink } as CSSProperties}
             >
               <header className="resume-header">
@@ -1192,7 +1224,7 @@ export function ResumeBuilder() {
                             : station.company || typeConfig.fallbackTitle;
 
                           return (
-                            <article className={`timeline-entry timeline-entry-${station.type} ${station.showTitle ? "" : "timeline-entry-title-hidden"}`} key={station.id}>
+                            <article className={`timeline-entry timeline-entry-${station.type} ${station.showTitle ? "" : "timeline-entry-title-hidden"} ${printBreakIds.has(station.id) ? "print-page-break-before" : ""}`} key={station.id}>
                               <div className="timeline-marker" />
                               {(station.type !== "employment" || !station.showTitle) && <p className="resume-entry-type">{typeConfig.label}</p>}
                               {station.showTitle && (
@@ -1266,7 +1298,7 @@ export function ResumeBuilder() {
                   )}
                 </aside>
               </div>
-              <footer className="resume-footer"><span>Lebenslauf</span><span>{new Date().getFullYear()}</span></footer>
+              <footer className="resume-footer"><span suppressHydrationWarning>{formattedPrintDate}</span></footer>
             </article>
           </div>
         </section>
